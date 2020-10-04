@@ -1,0 +1,4 @@
+command to test on DamageNet e.g.:
+D:\projects\shape\shape_selectivity_analysis\damagenet>python damageNet_run_test.py -ds D:\projects\shape_dataset\DAmageNet\DAmageNet -lb D:\project
+s\shape_dataset\DAmageNet\val_damagenet.txt -lp log_test_damageNet_checkerboard_horizontal_112 -bs 16 -wk 2 -m D:\projects\shape\shape_selectivity_analysis
+\damagenet\log_model_earyly_stop_checkerboard_horizontal_112\model.pkl26
