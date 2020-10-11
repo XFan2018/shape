@@ -454,3 +454,62 @@ class AE(nn.Module):
         return activation
 
 
+class ConvAE(nn.Module):
+    def __init__(self, channel1, channel2, channel3, input1, input2):
+        super(ConvAE, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:32， 4) -> (channel:32, 8)
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel3,
+                                                     stride=1,
+                                                     kernel_size=3,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=2,
+                                                     padding_mode="zeros")
+        # (channel:32， 8) -> (channel:16, 16)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel2,
+                                                     stride=1,
+                                                     kernel_size=3,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=4,
+                                                     padding_mode="zeros")
+        # (channel:16, 16) -> (channel: 2, 32)
+        self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=channel2,
+                                                     out_channels=channel1,
+                                                     stride=1,
+                                                     kernel_size=3,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=8,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
+        activation = torch.relu(self.conv1d_3(activation))
+        activation = torch.relu(self.conv1d_4(activation))
+        activation = self.pool1d_3(activation)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        activation = torch.relu(self.transpose_conv1d_2(activation))
+        activation = self.transpose_conv1d_3(activation)
+
+        return activation
+
+
+if __name__ == "__main__":
+    input = torch.ones(1, 1, 4)
+    t_conv = nn.ConvTranspose1d(in_channels=1, out_channels=1, stride=1, kernel_size=3, padding=0, output_padding=0,
+                                dilation=2, padding_mode="zeros", bias=False)
+    t_conv.weight.data = torch.tensor(data=[[[1, 2, 3]]], dtype=torch.float)
+    print(t_conv(input))
