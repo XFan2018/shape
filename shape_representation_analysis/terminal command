@@ -1,18 +1,6 @@
-trainging:
-python polygon_training.py -dts /Users/leo/PycharmProjects/summerProject/project2/animal_silhouette_training -ext tif -nn "64 32 17" -pn 32 -epn 60
-testing:
-python polygon_training.py -ts /Users/leo/PycharmProjects/summerProject/project2/animal_silhouette_testing -ext tif  -pn 32 -m /Users/leo/PycharmProjects/summerProject/project3/polygon_classifier_model
+conv_ae:
+python polygon_training.py -dts D:\projects\shape_dataset\Hemera -ext png -m log_model_Conv_AE_8_16_32 -epn 30 -ltrp log_training_Conv_AE_8_16_32 -nn "8 16 32" -pn 32
 
 
-python polygon_training.py -dts "D:\\projects\\summerProject2020\\project3\\animal_silhouette_training" -ts "D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing" -ext tif  -pn 32 -epn 1000 -m model_polygon_1dvgg16 -ltrp log_train_polygon_1dvgg16 -ltsp log_test_polygon_1dvgg16
-
-
-
-lstm:
-python polygon_training.py -dts "D:\\projects\\summerProject2020\\project3\\animal_silhouette_training" -ts "
-D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing" -ext tif  -pn 32 -epn 1000 -m model_polygon_lstm_1_32(2) -ltrp log_train_polygon_lstm
-_1_32(2) -ltsp log_test_polygon_lstm_1_32(2)
-
-
-polygon coordinates 1d convolutional model:
-python polygon_training.py -dts "D:\\projects\\summerProject2020\\project3\\animal_silhouette_training" -ts "D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing" -ext tif  -pn 32 -epn 1000 -m model_es_polygon_1dvgg11_128_128_64 -ltrp log_es_train_polygon_1dvgg11_128_128_64 -ltsp log_es_test_polygon_1dvgg11_128_128_64 -vs "D:\projects\summerProject2020\project3\animal_silhouette_validation"
+polygon coordinates:
+D:\projects\shape\shape_representation_analysis>python polygon_training.py -dts D:\projects\shape_dataset\animal_dataset -ext tif  -pn 32 -epn 1000 -m model_conv_ae_polygon_1dvgg7_128_128_64 -ltrp log_conv_ae_train_polygon_1dvgg7_128_128_64 -ltsp log_conv_ae_test_polygon_1dvgg7_128_128_64 -vs D:\projects\shape_dataset\animal_dataset

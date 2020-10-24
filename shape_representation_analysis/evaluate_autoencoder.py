@@ -1,9 +1,9 @@
 import math
 
-with open(r"D:\projects\summerProject2020\project3\ae_training\original_input0") as f:
+with open(r"D:\projects\shape\shape_representation_analysis\ConvAE_training\original_input29", "r") as f:
     origin = f.readlines()
 
-with open(r"D:\projects\summerProject2020\project3\ae_training\reconstruction0") as f:
+with open(r"D:\projects\shape\shape_representation_analysis\ConvAE_training\reconstruction29", "r") as f:
     reconstruction = f.readlines()
 
 error = 0

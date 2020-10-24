@@ -1,11 +1,12 @@
 from sparse_coding import *
-from PIL import Image
-import numpy as np
 import matplotlib.pyplot as plt
-from torchvision import transforms
-import math
+import torch_interpolations
+import torch
+import numpy as np
+from shape_representation_analysis.sparse_coding import im2poly
 
-im = Image.open("D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing\\bird\\bird8.tif")
+
+# im = Image.open("D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing\\bird\\bird8.tif")
 
 
 # # im = im.convert("RGB")
@@ -27,6 +28,30 @@ class PolygonTransform(object):
         if self.oneDim:
             new_polygon = new_polygon.flatten('F')
         return new_polygon
+
+
+class EqualArclengthTransform(object):
+    def __init__(self, n_samples):
+        self.n_samples = n_samples
+
+    def __call__(self, polygon):
+        print(polygon.shape)
+        x = np.array(np.concatenate((polygon[:, 0], [polygon[0, 0]]), axis=0))
+        y = np.concatenate((polygon[:, 1], [polygon[0, 1]]), axis=0)
+
+        vertices = np.array([x, y]).transpose()
+
+        c = np.dot(vertices, [1, 1j])
+        arclength = np.concatenate([[0], np.cumsum(abs(np.diff(c)))])
+        target = arclength[-1] * np.arange(self.n_samples) / self.n_samples
+
+        gi_x = torch_interpolations.RegularGridInterpolator([torch.tensor(arclength)], torch.tensor(x[0]))
+        gi_y = torch_interpolations.RegularGridInterpolator([torch.tensor(arclength)], torch.tensor(y))
+
+        fx = gi_x([torch.tensor(target)])
+        fy = gi_y([torch.tensor(target)])
+
+        return np.concatenate((fx.numpy(), fy.numpy()), axis=1)
 
 
 class InterpolationTransform(object):

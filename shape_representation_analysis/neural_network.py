@@ -455,7 +455,7 @@ class AE(nn.Module):
 
 
 class ConvAE(nn.Module):
-    def __init__(self, channel1, channel2, channel3, input1, input2):
+    def __init__(self, channel1, channel2, channel3):
         super(ConvAE, self).__init__()
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
@@ -484,7 +484,7 @@ class ConvAE(nn.Module):
                                                      padding_mode="zeros")
         # (channel:16, 16) -> (channel: 2, 32)
         self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=channel2,
-                                                     out_channels=channel1,
+                                                     out_channels=2,
                                                      stride=1,
                                                      kernel_size=3,
                                                      padding=0,
@@ -505,6 +505,174 @@ class ConvAE(nn.Module):
         activation = self.transpose_conv1d_3(activation)
 
         return activation
+
+
+class ConvAE2(nn.Module):
+    def __init__(self, channel1, channel2, channel3):
+        super(ConvAE2, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:32， 4) -> (channel:32, 8)
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel3,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:32， 8) -> (channel:16, 16)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel2,
+                                                     stride=1,
+                                                     kernel_size=9,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:16, 16) -> (channel: 2, 32)
+        self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=channel2,
+                                                     out_channels=2,
+                                                     stride=1,
+                                                     kernel_size=17,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
+        activation = torch.relu(self.conv1d_3(activation))
+        activation = torch.relu(self.conv1d_4(activation))
+        activation = self.pool1d_3(activation)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        activation = torch.relu(self.transpose_conv1d_2(activation))
+        activation = self.transpose_conv1d_3(activation)
+
+        return activation
+
+
+class ConvAE3(nn.Module):
+    def __init__(self, channel1, channel2, channel3):
+        super(ConvAE3, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:32， 4) -> (channel:32, 8)
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel3,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:32， 8) -> (channel:28, 12)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=28,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:28, 12) -> (channel: 24, 16)
+        self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=28,
+                                                     out_channels=24,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:24, 16) -> (channel: 20, 20)
+        self.transpose_conv1d_4 = nn.ConvTranspose1d(in_channels=24,
+                                                     out_channels=20,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:20, 20) -> (channel: 16, 24)
+        self.transpose_conv1d_5 = nn.ConvTranspose1d(in_channels=20,
+                                                     out_channels=16,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:16, 24) -> (channel: 12, 28)
+        self.transpose_conv1d_6 = nn.ConvTranspose1d(in_channels=16,
+                                                     out_channels=12,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:12, 28) -> (channel: 2, 32)
+        self.transpose_conv1d_7 = nn.ConvTranspose1d(in_channels=12,
+                                                     out_channels=2,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=0,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
+        activation = torch.relu(self.conv1d_3(activation))
+        activation = torch.relu(self.conv1d_4(activation))
+        activation = self.pool1d_3(activation)
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_2(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_3(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_4(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_5(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_6(activation))
+        # activation = self.circular_padding(activation, 5)
+        activation = self.transpose_conv1d_7(activation)
+        return activation
+
+    def circular_padding(self, features, kernel_size):
+        padding_size = (kernel_size - 1) // 2
+        length = features.shape[0]
+        bottom_padding = features[0:padding_size, :]
+        print("bottom_padding", bottom_padding)
+        top_padding = features[length - padding_size:length, :]
+        print("top_padding", top_padding)
+        result = features.clone()
+        result = torch.cat((top_padding, result, bottom_padding))
+        print("padding result", result)
+        return result
 
 
 if __name__ == "__main__":

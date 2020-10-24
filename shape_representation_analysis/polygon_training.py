@@ -12,7 +12,8 @@ from image_to_polygon import TurningAngleTransform, PolygonTransform, Angle2VecT
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, RNN, VGG11PolygonCoordinates, \
-    VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE
+    VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, ConvAE, \
+    ConvAE2, ConvAE3
 from pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -162,7 +163,7 @@ def autoencoder_training_no_es(model, dataloader, criterion, optimizer, num_epoc
         for data_index, (inputs, labels) in enumerate(dataloader):
             inputs = inputs.to(device)
             labels = labels.to(device)
-            inputs = inputs.view(-1, 1, 64).squeeze()
+            # inputs = inputs.view(-1, 1, 64).squeeze()
             print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -187,8 +188,8 @@ def autoencoder_training_no_es(model, dataloader, criterion, optimizer, num_epoc
 
             ########## to delete ###########
             # if data_index == 20:
-            #    break
-        img = Image.open("D:\\projects\\summerProject2020\\project3\\Hemera\\v1\\1ocloc2.png")
+            #     break
+        img = Image.open(r"D:\projects\shape_dataset\animal_dataset\bird\bird13.tif")
         np_img = np.array(img)  # PIL image to numpy (row, col, channel)
         polygon_coordinates_img = im2poly(np_img, 32)
         # counter clockwise
@@ -196,17 +197,20 @@ def autoencoder_training_no_es(model, dataloader, criterion, optimizer, num_epoc
         # index start from the left most point
         idx = np.argmin(polygon_coordinates_img[:, 0])
         polygon_coordinates_img = np.vstack((polygon_coordinates_img[idx:], polygon_coordinates_img[0:idx]))
-        original_input = polygon_coordinates_img.reshape(-1, 64)[np.newaxis, ...]
+        original_input = polygon_coordinates_img.reshape(-1, 32)[np.newaxis, ...]
         input = torch.tensor(original_input)
         input = input.to(device)
+        print(input.shape)
         reconstruction = model(input.float())
         reconstruction = np.array(reconstruction.cpu().detach())
 
-        original_input = original_input.squeeze((0, 1))
-        reconstruction = reconstruction.squeeze((0, 1))
+        # original_input = original_input.squeeze((0, 1))
+        # reconstruction = reconstruction.squeeze((0, 1))
+        original_input = original_input.squeeze(0)
+        reconstruction = reconstruction.squeeze(0)
 
-        np.savetxt("ae_training\\original_input" + str(epoch), original_input)
-        np.savetxt("ae_training\\reconstruction" + str(epoch), reconstruction)
+        np.savetxt("ConvAE2_training\\original_input" + str(epoch), original_input)
+        np.savetxt("ConvAE2_training\\reconstruction" + str(epoch), reconstruction)
 
         epoch_result = (f'{epoch:<30} '
                         f'{epoch_loss / (len(dataloader.dataset)) :<30}\n')
@@ -452,13 +456,13 @@ def testing(model, test_loader, device, model_id, log_testing_path):
 
 
 def polygon_training():
-    input_nodes, hidden1_nodes, hidden2_nodes, output_nodes = args.node_number.split()
-    transform_train = torchvision.transforms.Compose([# transforms.RandomHorizontalFlip(0.5),
-        # transforms.RandomVerticalFlip(0.05),
-        PolygonTransform(int(args.polygon_number), True)
-        # RandomRotatePoints(20)
-    ])
-    transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), True)])
+    # input_nodes, hidden1_nodes, hidden2_nodes, output_nodes = args.node_number.split()
+    transform_train = torchvision.transforms.Compose([transforms.RandomHorizontalFlip(0.5),
+                                                      transforms.RandomVerticalFlip(0.05),
+                                                      PolygonTransform(int(args.polygon_number), False),
+                                                      RandomRotatePoints(20)
+                                                      ])
+    transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
     dataset = AnimalDataset(args.dataset, args.extension, transforms=transform_train)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=16,
@@ -467,11 +471,11 @@ def polygon_training():
     validloader = torch.utils.data.DataLoader(validset,
                                               batch_size=16,
                                               shuffle=False)
-    model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
-    # model = VGG9PolygonCoordinates(8, 16, 32, 64, 512, 512, 64)
+    # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
+    # model = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
     # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
     # model = torch.load(r"D:\projects\summerProject2020\project3\pre_trained_models\pretrained_model_64_64_32")
-
+    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\pretrained_conv_ae")
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(),
                                 lr=1e-2,
@@ -494,7 +498,7 @@ def polygon_training():
 
 
 def polygon_testing(model_trained, stop_point):
-    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), True)])
+    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
     validset = AnimalDataset(args.validset, args.extension, transforms=transform)
     valid_loader = torch.utils.data.DataLoader(validset,
                                                batch_size=16,
@@ -1233,6 +1237,31 @@ def autoencoder_training():
     model = AE(int(input_size), int(hidden_size), int(output_size))
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(),
+                                lr=1e-3,
+                                momentum=0.9,
+                                weight_decay=1e-4)
+    if torch.cuda.is_available():
+        model.cuda()
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    autoencoder_training_no_es(model=model,
+                               dataloader=dataloader,
+                               criterion=criterion,
+                               optimizer=optimizer,
+                               num_epochs=int(args.epoch_number),
+                               device=device,
+                               log_training_path=args.log_training_path)
+
+
+def Conv_autoencoder_training():
+    channel1, channel2, channel3 = args.node_number.split()
+    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number))])
+    # training_set = HemeraDataset(args.dataset, args.extension, transforms=transform)
+    training_set = AnimalDataset(args.dataset, args.extension, transforms=transform)
+    dataloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
+    model = ConvAE3(int(channel1), int(channel2), int(channel3))
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(),
                                 lr=1e-2,
                                 momentum=0.9,
                                 weight_decay=1e-4)
@@ -1283,7 +1312,7 @@ def evaluate_ae_result():
     plt.scatter(new_polygon[:, 0], new_polygon[:, 1])
     plt.show()
     print(new_polygon)
-    model = torch.load(r"D:\projects\summerProject2020\project3\model_polygon_ae_64_64_32_epoch20\model.pkl")
+    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\model.pkl")
     input = new_polygon.reshape(-1, 64)[np.newaxis, ...]
     input = torch.tensor(input)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -1293,6 +1322,41 @@ def evaluate_ae_result():
     result = result.squeeze(0).reshape(32, 2)
     print(result)
     plt.scatter(result[:, 0], result[:, 1])
+    plt.show()
+
+
+def evaluate_conv_ae_result():
+    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE3_8_16_32\model.pkl")
+    print(model.state_dict())
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    img = Image.open(r"D:\projects\shape_dataset\Hemera\v1\1sign.png")
+
+    np_img = np.array(img)  # PIL image to numpy (row, col, channel)
+    polygon_coordinates_img = im2poly(np_img, 32)
+
+    # counter clockwise
+    polygon_coordinates_img = np.flip(polygon_coordinates_img, axis=0)
+
+    # index start from the left most point
+    idx = np.argmin(polygon_coordinates_img[:, 0])
+    polygon_coordinates_img = np.vstack((polygon_coordinates_img[idx:], polygon_coordinates_img[0:idx]))
+    plt.plot(polygon_coordinates_img[:, 0], polygon_coordinates_img[:, 1])
+    original_input = polygon_coordinates_img.transpose()[np.newaxis, ...]
+    print(original_input.shape)
+
+    input = torch.tensor(original_input)
+    input = input.to(device)
+
+    reconstruction = model(input.float())
+    reconstruction = np.array(reconstruction.cpu().detach())
+
+    original_input = original_input.squeeze(0).transpose()
+    reconstruction = reconstruction.squeeze(0).transpose()
+    print(reconstruction.shape)
+
+    plt.scatter(original_input[:, 0], original_input[:, 1])
+    plt.plot(reconstruction[:, 0], reconstruction[:, 1])
+    plt.scatter(reconstruction[:, 0], reconstruction[:, 1])
     plt.show()
 
 
@@ -1314,9 +1378,37 @@ def save_pretrained_model(autoencoder_dir, model_save_path):
     torch.save(model1, model_save_path)
 
 
-if __name__ == "__main__":
-    model, train_loss, valid_loss, stop_point = polygon_training()
-    plot(train_loss, valid_loss, stop_point)
-    polygon_testing(model, stop_point)
+def save_pretrained_conv_ae(autoencoder_dir, model_save_path):
+    # autoencoder_dir = r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\model.pkl"
+    # model_save_path = r'D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\pretrained_conv_ae'
 
-    # autoencoder_training()
+    model = torch.load(autoencoder_dir)
+    model1 = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
+    model1.conv1d_1.weight.data = model.state_dict()['conv1d_1.weight']
+    model1.conv1d_1.bias.data = model.state_dict()['conv1d_1.bias']
+    model1.conv1d_2.weight.data = model.state_dict()['conv1d_2.weight']
+    model1.conv1d_2.bias.data = model.state_dict()['conv1d_2.bias']
+    model1.conv1d_3.weight.data = model.state_dict()['conv1d_3.weight']
+    model1.conv1d_3.bias.data = model.state_dict()['conv1d_3.bias']
+    model1.conv1d_4.weight.data = model.state_dict()['conv1d_4.weight']
+    model1.conv1d_4.bias.data = model.state_dict()['conv1d_4.bias']
+
+    print(model1.conv1d_4.weight.data)
+    print(model.state_dict()['conv1d_4.weight'])
+
+    torch.save(model1, model_save_path)
+
+
+if __name__ == "__main__":
+    # model, train_loss, valid_loss, stop_point = polygon_training()
+    # plot(train_loss, valid_loss, stop_point)
+    # polygon_testing(model, stop_point=stop_point)
+
+    # Conv_autoencoder_training()
+    evaluate_conv_ae_result()
+
+    # a = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
+    # b = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
+    # criterion = torch.nn.MSELoss()
+    # loss = criterion(a, b)
+    # print(loss)

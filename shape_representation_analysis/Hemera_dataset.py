@@ -57,7 +57,7 @@ class HemeraDataset(VisionDataset):
 
 
 if __name__ == "__main__":
-    data_dir = "Hemera"
+    data_dir = "D:\projects\shape_dataset\Hemera"
     ext = "png"
     transform = transforms.Compose([PolygonTransform(int(32))])
     dataset = HemeraDataset(data_dir, ext, transform)

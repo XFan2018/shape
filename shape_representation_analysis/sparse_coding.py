@@ -15,7 +15,7 @@ def learn_sparse_components(shapes, n_components, lmbda, batch_size, n_iter=1000
     n_shapes = len(shapes)
     # Learn sparse components and predict coefficients for the dataset
     dl = MiniBatchDictionaryLearning(n_components=n_components, alpha=lmbda,
-                                     batch_size=batch_size, n_iter=n_iter, verbose=1,)
+                                     batch_size=batch_size, n_iter=n_iter, verbose=1, )
     dl.coefficients = dl.fit_transform(shapes)
     # Compute frequency of activations and argsort
     # (but do not apply argsort as we would also need to sort coefficients and all inner
@@ -33,7 +33,7 @@ def im2poly(image, n_samples, normalized=True, whiten=False):
     # the higher values (shape), and the starting point is the minimum YX
     # coordinate in lexicographical order.
     coords = find_contours(image, level=0)[0]
-    coords[:, 0], coords[:, 1] = coords[:, 1], -coords[:, 0] # lower left origin
+    coords[:, 0], coords[:, 1] = coords[:, 1], -coords[:, 0]  # lower left origin
     # Downsample the number of points by applying a low-pass filter (crop of
     # the Fourier transform)
     polygon = resample(coords, num=n_samples)
@@ -68,7 +68,7 @@ def occlude_shape(shape, n_points, start_point):
 
 
 def plot_components(phis, gains=None, domain='spatial', loop=True, nrows=None,
-    ncols=None, figsize=None):
+                    ncols=None, figsize=None):
     """Plot shape components into a grid for different domains."""
     n_components, n_samples = phis.shape
     xy = n_samples // 2
@@ -94,10 +94,10 @@ def plot_components(phis, gains=None, domain='spatial', loop=True, nrows=None,
         # phifts = np.fft.fftshift(np.fft.fft(complex_phis, axis=1), axes=1)
         # freqs = np.fft.fftshift(np.fft.fftfreq(xy, 1 / xy))
         phifts = np.fft.fft(complex_phis, axis=1)
-        freqs = np.fft.fftfreq(xy, 1 / xy)[1:xy//2]
+        freqs = np.fft.fftfreq(xy, 1 / xy)[1:xy // 2]
         # Take magnitude and sum over negative and positive frequencies
         pos_mags = np.abs(phifts[:, 1:(xy // 2)])
-        neg_mags = np.abs(phifts[:, -((xy // 2) - 1):][:, ::-1]) # reverse array
+        neg_mags = np.abs(phifts[:, -((xy // 2) - 1):][:, ::-1])  # reverse array
         phifts = neg_mags + pos_mags
         ylim = (0, phifts.max() * 1.1)
     elif domain == '1D':
@@ -107,19 +107,19 @@ def plot_components(phis, gains=None, domain='spatial', loop=True, nrows=None,
     rc = np.ceil(np.sqrt(n_components))
     for i in range(n_components):
         if nrows and ncols:
-            plt.subplot(nrows, ncols, i+1,)
+            plt.subplot(nrows, ncols, i + 1, )
         else:
-            plt.subplot(rc, rc, i+1)
+            plt.subplot(rc, rc, i + 1)
         if domain == 'spatial':
             plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                            left=False, labelleft=False,)
+                            left=False, labelleft=False, )
             phi = phis[i]
             if phi[0] < 0:
                 phi = -phi
-            plt.plot(phi[:xy], phi[xy:], c='C{}'.format(i%10), lw=1.5)
+            plt.plot(phi[:xy], phi[xy:], c='C{}'.format(i % 10), lw=1.5)
             if loop:
                 plt.plot(np.array([phi[:xy][0], phi[:xy][-1]]), np.array([phi[xy:][0], phi[xy:][-1]]),
-                         c='C{}'.format(i%10), lw=1.5)
+                         c='C{}'.format(i % 10), lw=1.5)
             plt.xlim(xlim)
         elif domain == 'fourier':
             maxfreq = freqs[np.argmax(np.abs(phifts[i]))]
@@ -128,16 +128,16 @@ def plot_components(phis, gains=None, domain='spatial', loop=True, nrows=None,
             plt.xticks([0, 8, 16], [0, 8, 16])
             plt.xlabel('Frequency')
             plt.ylabel('Magnitude')
-            plt.title('{}'.format((i*4)))
+            plt.title('{}'.format((i * 4)))
             # plt.yticks([])
             # plt.bar(freqs + 0.5, phifts[i].imag, width=0.5, align='edge')
             # plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                            # left=False, labelleft=False,)
+            # left=False, labelleft=False,)
             # plt.title('{}'.format(maxfreq))
             # plt.xlim((-n_samples/4, n_samples/4+1))
         elif domain == '1D':
             plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                            left=False, labelleft=False,)
+                            left=False, labelleft=False, )
             plt.plot(phis[i][:xy])
             plt.plot(phis[i][xy:])
         plt.ylim((ylim))
@@ -159,8 +159,8 @@ def plot_3d_components(components, figsize=None):
     fig = plt.figure(figsize=figsize if figsize is not None else (16, 16))
     rc = np.ceil(np.sqrt(n_components))
     for i in range(n_components):
-        ax = plt.subplot(rc, rc, i+1, projection='3d')
-        ax.plot(xx[i], yy[i], zz[i], c='C{}'.format(i%10, lw=1.5))
+        ax = plt.subplot(rc, rc, i + 1, projection='3d')
+        ax.plot(xx[i], yy[i], zz[i], c='C{}'.format(i % 10, lw=1.5))
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.set_zlim(zlim)
@@ -169,8 +169,8 @@ def plot_3d_components(components, figsize=None):
 
 
 def plot_reconstructions(shapes, dictionary, algorithm='omp',
-        n_nonzero_coefs=None, alpha=None, show_points=False, show_errors=True,
-        row_only=False, figsize=None):
+                         n_nonzero_coefs=None, alpha=None, show_points=False, show_errors=True,
+                         row_only=False, figsize=None):
     n_shapes = len(shapes)
     xy = shapes.shape[1] // 2
     coefficients = sparse_encode(shapes, dictionary, algorithm=algorithm,
@@ -187,11 +187,11 @@ def plot_reconstructions(shapes, dictionary, algorithm='omp',
 
     for i in range(n_shapes):
         if row_only:
-            plt.subplot(1, n_shapes, i+1)
+            plt.subplot(1, n_shapes, i + 1)
         else:
-            plt.subplot(rc, rc, i+1)
+            plt.subplot(rc, rc, i + 1)
         plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                        left=False, labelleft=False,)
+                        left=False, labelleft=False, )
         plt.plot(shapes[i][:xy], shapes[i][xy:], markers['shapes'], c='C0', lw=1.0)
         plt.plot(recons[i][:xy], recons[i][xy:], markers['recons'], c='C1', lw=1.5)
         if show_errors:
@@ -202,13 +202,13 @@ def plot_reconstructions(shapes, dictionary, algorithm='omp',
 
 
 def plot_reconstruction_detail(shape, dictionary, n_components, scaled=False,
-        algorithm='omp', sorted=True, show_points=False, show_error=True,
-        figsize=None):
+                               algorithm='omp', sorted=True, show_points=False, show_error=True,
+                               figsize=None):
     # Compute reconstruction for given shape
     xy = len(shape) // 2
     if algorithm in ('omp', 'lars'):
         coefs = sparse_encode(shape[np.newaxis, :], dictionary, algorithm=algorithm,
-                              n_nonzero_coefs=n_components,)
+                              n_nonzero_coefs=n_components, )
         recons = np.dot(coefs, dictionary)[0]
     elif algorithm == 'pca':
         if not isinstance(dictionary, PCA):
@@ -263,16 +263,17 @@ def plot_reconstruction_detail(shape, dictionary, n_components, scaled=False,
         # plt.tick_params(axis='both', bottom=False, labelbottom=False,
         #                 left=False, labelleft=False,)
         # plt.title('{:.4f}'.format(coef), fontsize=18)
-        plt.subplot(2, n_components, 1+i)
+        plt.subplot(2, n_components, 1 + i)
         plt.plot(comp[:xy], comp[xy:], markers['recons'],
-                 c='C{}'.format((i+2)%10), lw=1.5)
+                 c='C{}'.format((i + 2) % 10), lw=1.5)
         # loop
         plt.plot(np.array([comp[:xy][0], comp[:xy][-1]]),
                  np.array([comp[xy:][0], comp[xy:][-1]]),
-                 markers['recons'], c='C{}'.format((i+2)%10), lw=1.5)
-        plt.xlim(xlim); plt.ylim(ylim)
+                 markers['recons'], c='C{}'.format((i + 2) % 10), lw=1.5)
+        plt.xlim(xlim);
+        plt.ylim(ylim)
         plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                        left=False, labelleft=False,)
+                        left=False, labelleft=False, )
         plt.title('Coefficient = {:.2f}'.format(coef), fontsize=36)
 
         # plt.subplot(2, n_components+1, (n_components+3)+i)
@@ -281,7 +282,7 @@ def plot_reconstruction_detail(shape, dictionary, n_components, scaled=False,
         # plt.xlim(xlim); plt.ylim(ylim)
         # plt.tick_params(axis='both', bottom=False, labelbottom=False,
         #                 left=False, labelleft=False,)
-        plt.subplot(2, n_components, n_components+1+i)
+        plt.subplot(2, n_components, n_components + 1 + i)
         plt.plot(shape[:xy], shape[xy:], markers['shapes'], c='C0', lw=1.0)
         # loop
         plt.plot(np.array([shape[:xy][0], shape[:xy][-1]]),
@@ -291,9 +292,10 @@ def plot_reconstruction_detail(shape, dictionary, n_components, scaled=False,
         plt.plot(np.array([cumsum[:xy][0], cumsum[:xy][-1]]),
                  np.array([cumsum[xy:][0], cumsum[xy:][-1]]),
                  markers['recons'], c='C1', lw=1.5)
-        plt.xlim(xlim); plt.ylim(ylim)
+        plt.xlim(xlim);
+        plt.ylim(ylim)
         plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                        left=False, labelleft=False,)
+                        left=False, labelleft=False, )
         plt.title('Error = {:.2f}'.format(error), fontsize=36)
 
     return fig
@@ -316,44 +318,47 @@ def plot_pca_harmonics(shape, pca, n_harmonics=6, figsize=None):
     ylim = 1.1 * shape[xy:].min(), 1.1 * shape[xy:].max()
 
     # Plot the reconstruction along the initial shape
-    plt.subplot(3, n_harmonics+2, 1)
+    plt.subplot(3, n_harmonics + 2, 1)
     plt.plot(shape[:xy], shape[xy:], markers['shapes'], c='C0', lw=1.0)
     plt.plot(recons[:xy], recons[xy:], markers['recons'], c='C1', lw=1.5)
-    plt.xlim(xlim); plt.ylim(ylim);
+    plt.xlim(xlim);
+    plt.ylim(ylim);
     plt.tick_params(axis='both', bottom=False, labelbottom=False,
-                    left=False, labelleft=False,)
+                    left=False, labelleft=False, )
 
     # Plot the harmonics
     fund = pca.mean_
-    plt.subplot(3, n_harmonics+2, 2)
+    plt.subplot(3, n_harmonics + 2, 2)
     plt.plot(fund[:xy], fund[xy:], markers['recons'],
-             c='C{}'.format((0+2)%10), lw=1.5)
+             c='C{}'.format((0 + 2) % 10), lw=1.5)
     plt.title('Fundamental (PCA mean)')
-    plt.xlim(xlim); plt.ylim(ylim)
+    plt.xlim(xlim);
+    plt.ylim(ylim)
     for i in range(n_harmonics):
-
         coef = coefs[0][i]
         comp = pca.components_[i]
 
-        plt.subplot(3, n_harmonics+2, 3+i)
+        plt.subplot(3, n_harmonics + 2, 3 + i)
         plt.plot(comp[:xy], comp[xy:], markers['recons'],
-                 c='C{}'.format((i+3)%10), lw=1.5)
-        plt.xlim(xlim); plt.ylim(ylim)
+                 c='C{}'.format((i + 3) % 10), lw=1.5)
+        plt.xlim(xlim);
+        plt.ylim(ylim)
 
-        plt.subplot(3, n_harmonics+2, (n_harmonics+5)+i)
+        plt.subplot(3, n_harmonics + 2, (n_harmonics + 5) + i)
         harmonic = fund + comp
         plt.plot(fund[:xy], fund[xy:], markers['shapes'], lw=1.0)
         plt.plot(harmonic[:xy], harmonic[xy:], markers['recons'], lw=1.5)
-        plt.xlim(xlim); plt.ylim(ylim)
+        plt.xlim(xlim);
+        plt.ylim(ylim)
         plt.title('No coefficient')
 
-        plt.subplot(3, n_harmonics+2, (2*(n_harmonics+3)+1)+i)
+        plt.subplot(3, n_harmonics + 2, (2 * (n_harmonics + 3) + 1) + i)
         harmonic = fund + coef * comp
         plt.plot(fund[:xy], fund[xy:], markers['shapes'], lw=1.0)
         plt.plot(harmonic[:xy], harmonic[xy:], markers['recons'], lw=1.5)
-        plt.xlim(xlim); plt.ylim(ylim)
+        plt.xlim(xlim);
+        plt.ylim(ylim)
         plt.title('Coefficient = {:.4f}'.format(coef))
-
 
     return fig
 
@@ -368,8 +373,8 @@ def sampling_residual_error(image, n_samples, normalized=True):
         polygon -= polygon.mean(axis=0)
         polygon /= np.linalg.norm(polygon, axis=0)[np.newaxis]
     # Generate same sampled polygon for different starting points
-    polygons = [polygon,]
-    step = n_points // 100 # try a hundred starting points
+    polygons = [polygon, ]
+    step = n_points // 100  # try a hundred starting points
     for roll in range(step, n_points, step):
         shifted_coords = np.roll(coords, roll, axis=0)
         shifted_poly = resample(shifted_coords, n_samples)
@@ -396,9 +401,10 @@ def turning_angles(shape):
     differences = np.gradient(closed_shape, axis=0)
     # Then compute angle between these consecutive differences
     angles = np.zeros(n_samples)
-    indices = np.arange(-1, n_samples); indices[-1] = 0 # start with -1 and finish with 0
+    indices = np.arange(-1, n_samples);
+    indices[-1] = 0  # start with -1 and finish with 0
     for k, i in enumerate(indices[:-1]):
-        a, b = differences[i], differences[i+1]
+        a, b = differences[i], differences[i + 1]
         anorm, bnorm = np.linalg.norm(a), np.linalg.norm(b)
         # arccos restricts the angle to [0, pi]
         angles[k] = np.arccos(np.dot(a, b) / (anorm * bnorm))
@@ -470,8 +476,16 @@ def max_frequency_magnitudes(components):
     ft = np.fft.fft(components[:, :xy] + 1j * components[:, xy:])
     # Take magnitude and sum over negative and positive frequencies
     pos_mags = np.abs(ft[:, 1:(xy // 2)])
-    neg_mags = np.abs(ft[:, -((xy // 2) - 1):][:, ::-1]) # reverse array
+    neg_mags = np.abs(ft[:, -((xy // 2) - 1):][:, ::-1])  # reverse array
     magnitudes = neg_mags + pos_mags
     return magnitudes
 
 
+def equal_arclength(vertices, npoints):
+    vertices = np.array(vertices)
+    c = np.dot(vertices, [1, 1j])
+    arclength = np.concatenate([[0], np.cumsum(abs(np.diff(c)))])
+    target = arclength[-1] * np.arange(npoints) / npoints
+    vertices = np.c_[np.interp(target, arclength, vertices[:, 0]),
+                     np.interp(target, arclength, vertices[:, 1])]
+    return vertices
