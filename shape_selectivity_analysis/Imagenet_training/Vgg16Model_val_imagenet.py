@@ -1,7 +1,7 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from project1.scrambleTransform import ScrambleTransform, ScrambleRandomTransform, HorizontalScrambleTransform
+from scrambleTransform import ScrambleTransform, ScrambleRandomTransform, HorizontalScrambleTransform
 import PIL.Image as Image
 
 

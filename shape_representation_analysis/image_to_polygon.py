@@ -3,13 +3,7 @@ import matplotlib.pyplot as plt
 import torch_interpolations
 import torch
 import numpy as np
-from shape_representation_analysis.sparse_coding import im2poly
-
-
-# im = Image.open("D:\\projects\\summerProject2020\\project3\\animal_silhouette_testing\\bird\\bird8.tif")
-
-
-# # im = im.convert("RGB")
+from PIL import Image
 
 
 class PolygonTransform(object):
@@ -35,7 +29,6 @@ class EqualArclengthTransform(object):
         self.n_samples = n_samples
 
     def __call__(self, polygon):
-        print(polygon.shape)
         x = np.array(np.concatenate((polygon[:, 0], [polygon[0, 0]]), axis=0))
         y = np.concatenate((polygon[:, 1], [polygon[0, 1]]), axis=0)
 
@@ -45,13 +38,13 @@ class EqualArclengthTransform(object):
         arclength = np.concatenate([[0], np.cumsum(abs(np.diff(c)))])
         target = arclength[-1] * np.arange(self.n_samples) / self.n_samples
 
-        gi_x = torch_interpolations.RegularGridInterpolator([torch.tensor(arclength)], torch.tensor(x[0]))
+        gi_x = torch_interpolations.RegularGridInterpolator([torch.tensor(arclength)], torch.tensor(x))
         gi_y = torch_interpolations.RegularGridInterpolator([torch.tensor(arclength)], torch.tensor(y))
 
         fx = gi_x([torch.tensor(target)])
         fy = gi_y([torch.tensor(target)])
 
-        return np.concatenate((fx.numpy(), fy.numpy()), axis=1)
+        return np.concatenate((fx.numpy()[:, np.newaxis], fy.numpy()[:, np.newaxis]), axis=1)
 
 
 class InterpolationTransform(object):
@@ -204,12 +197,18 @@ class RandomRotatePoints(object):
 
 
 if __name__ == "__main__":
-    it = PolygonTransform(32, True)
-    points = it(im)
-    # for p in points:
-    #     result.append(p.real)
-    # for p in points:
-    #     result.append(p.imag)
-    # print(np.array(result))
-    # plt.scatter(points[:, 0], points[:, 1])
-    # plt.show()
+    im = Image.open(r"D:\projects\shape_dataset\animal_dataset\duck\duck1.tif")
+    etf = EqualArclengthTransform(32)
+    ptf = PolygonTransform(32)
+    polygon = ptf(im)
+    result = etf(polygon)
+    print(result.shape)
+    plt.scatter(result[:, 0], result[:, 1])
+    plt.plot(result[:, 0], result[:, 1])
+    x = np.diff(result[:, 0])
+    y = np.diff(result[:, 1])
+    distance = np.square(x) + np.square(y)
+    plt.show()
+    print(np.square(x))
+    print(np.square(y))
+    print(distance)

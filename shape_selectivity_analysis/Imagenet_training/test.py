@@ -63,3 +63,4 @@ def test_model(model, test_loader, log_path, device, scrambled, size):
                                                                                         total_acc_top5, total_confidence)
     f_log.write(result)
     f_log.close()
+    return total_acc

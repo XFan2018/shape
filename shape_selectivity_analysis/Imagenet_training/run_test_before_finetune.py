@@ -1,15 +1,11 @@
 import torch
 import torchvision
-from project1.Vgg16Model_val_imagenet import ConfigTestImagenet
-from project1.test import test_model
+from Vgg16Model_val_imagenet import ConfigTestImagenet
+from test import test_model
 
 
 def run_test_before_finetune():
-    log_path = "log_test_before_finetune_horizontal_scramble"
-
-    # config1 = ConfigTestImagenet()
-
-    # test_dataloader1 = config1.test_loader_imagenet_horizontal_scrambled
+    log_path = "log_test_before_finetune"
 
     model = torchvision.models.vgg16_bn(True)
 
@@ -18,17 +14,21 @@ def run_test_before_finetune():
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # test_model(model, test_dataloader1, log_path, device, False, 224)
+    acc = 1
 
-    arr = [8, 16, 28, 56, 112]
-    for size in arr:
-        print("start...\nsize: ", size)
+    while acc > 0.5:
 
-        config1 = ConfigTestImagenet(size)  # arg is block size
+        with torch.no_grad():
+            for param in model.parameters():
+                param.add_(torch.randn(param.size()) * 0.001)
 
-        test_dataloader1 = config1.test_loader_imagenet_scrambled
+        config1 = ConfigTestImagenet()
 
-        test_model(model, test_dataloader1, log_path, device, True, size)
+        test_dataloader1 = config1.test_loader_imagenet
+
+        acc = test_model(model, test_dataloader1, log_path, device, False, 224)
+
+    torch.save(model, "modified_model")
 
 
 if __name__ == "__main__":

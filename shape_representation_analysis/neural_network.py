@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+from sparse_coding import im2poly, equal_arclength
+import torch_interpolations
 
 
 class Net(nn.Module):
@@ -561,8 +565,9 @@ class ConvAE2(nn.Module):
 
 
 class ConvAE3(nn.Module):
-    def __init__(self, channel1, channel2, channel3):
+    def __init__(self, channel1, channel2, channel3, circular):
         super(ConvAE3, self).__init__()
+        self.circular = circular
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
@@ -571,11 +576,15 @@ class ConvAE3(nn.Module):
         self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
         self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
         # (channel:32， 4) -> (channel:32, 8)
+        if circular:
+            padding = 2
+        else:
+            padding = 0
         self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
                                                      out_channels=channel3,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -584,7 +593,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=28,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -593,7 +602,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=24,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -603,7 +612,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=20,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -613,7 +622,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=16,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -623,7 +632,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=12,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -633,7 +642,7 @@ class ConvAE3(nn.Module):
                                                      out_channels=2,
                                                      stride=1,
                                                      kernel_size=5,
-                                                     padding=0,
+                                                     padding=padding,
                                                      output_padding=0,
                                                      dilation=1,
                                                      padding_mode="zeros")
@@ -646,38 +655,223 @@ class ConvAE3(nn.Module):
         activation = torch.relu(self.conv1d_3(activation))
         activation = torch.relu(self.conv1d_4(activation))
         activation = self.pool1d_3(activation)
-        # activation = self.circular_padding(activation, 5)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_1(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_2(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_3(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_4(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_5(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = torch.relu(self.transpose_conv1d_6(activation))
-        # activation = self.circular_padding(activation, 5)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
         activation = self.transpose_conv1d_7(activation)
+        print(activation.shape)
         return activation
 
     def circular_padding(self, features, kernel_size):
         padding_size = (kernel_size - 1) // 2
-        length = features.shape[0]
-        bottom_padding = features[0:padding_size, :]
-        print("bottom_padding", bottom_padding)
-        top_padding = features[length - padding_size:length, :]
-        print("top_padding", top_padding)
+        points_num = features.shape[2]
+        bottom_padding = features[:, :, 0:padding_size]
+        # print("bottom_padding", bottom_padding)
+        top_padding = features[:, :, points_num - padding_size:points_num]
+        # print("top_padding", top_padding)
         result = features.clone()
-        result = torch.cat((top_padding, result, bottom_padding))
-        print("padding result", result)
+        result = torch.cat((top_padding, result, bottom_padding), dim=2)
+        # print("padding result", result)
         return result
 
 
+class ConvAEEqualArcLength(nn.Module):
+    def __init__(self, channel1, channel2, channel3, circular, points_num, device):
+        super(ConvAEEqualArcLength, self).__init__()
+        self.circular = circular
+        self.points_num = points_num
+        self.device = device
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+
+        if circular:
+            padding = 2
+        else:
+            padding = 0
+        # (channel:32， 4) -> (channel:32, 8)
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=channel3,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:32， 8) -> (channel:28, 12)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=28,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:28, 12) -> (channel: 24, 16)
+        self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=28,
+                                                     out_channels=24,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:24, 16) -> (channel: 20, 20)
+        self.transpose_conv1d_4 = nn.ConvTranspose1d(in_channels=24,
+                                                     out_channels=20,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:20, 20) -> (channel: 16, 24)
+        self.transpose_conv1d_5 = nn.ConvTranspose1d(in_channels=20,
+                                                     out_channels=16,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:16, 24) -> (channel: 12, 28)
+        self.transpose_conv1d_6 = nn.ConvTranspose1d(in_channels=16,
+                                                     out_channels=12,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+        # (channel:12, 28) -> (channel: 2, 32)
+        self.transpose_conv1d_7 = nn.ConvTranspose1d(in_channels=12,
+                                                     out_channels=2,
+                                                     stride=1,
+                                                     kernel_size=5,
+                                                     padding=padding,
+                                                     output_padding=0,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
+        activation = torch.relu(self.conv1d_3(activation))
+        activation = torch.relu(self.conv1d_4(activation))
+        activation = self.pool1d_3(activation)
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_2(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_3(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_4(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_5(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = torch.relu(self.transpose_conv1d_6(activation))
+        if self.circular:
+            activation = self.circular_padding(activation, 5)
+        activation = self.transpose_conv1d_7(activation)
+        return self.equal_arc_length(activation, self.points_num)
+
+    def circular_padding(self, features, kernel_size):
+        padding_size = (kernel_size - 1) // 2
+        points_num = features.shape[2]
+        bottom_padding = features[:, :, 0:padding_size]
+        # print("bottom_padding", bottom_padding)
+        top_padding = features[:, :, points_num - padding_size:points_num]
+        # print("top_padding", top_padding)
+        result = features.clone()
+        result = torch.cat((top_padding, result, bottom_padding), dim=2)
+        # print("padding result", result)
+        return result
+
+    def equal_arc_length(self, activation, points_num):
+        result = []
+        for polygon in activation:
+            polygon = torch.transpose(polygon, 0, 1)
+            polygon_x = torch.cat((polygon[:, 0], polygon[0, 0].view(1)))
+            polygon_y = torch.cat((polygon[:, 1], polygon[0, 1].view(1)))
+            arclength = torch.cat([torch.tensor([0]).to(self.device), torch.cumsum(
+                torch.sqrt((polygon_x[1:] - polygon_x[:-1]) ** 2 + (polygon_y[1:] - polygon_y[:-1]) ** 2), dim=0)])
+            target = arclength[-1] * torch.arange(points_num).to(self.device) / points_num
+
+            gi_x = torch_interpolations.RegularGridInterpolator([arclength], polygon_x)
+            gi_y = torch_interpolations.RegularGridInterpolator([arclength], polygon_y)
+            fx = gi_x([target])
+            fy = gi_y([target])
+            new_polygon = torch.vstack((fx, fy))
+            result.append(new_polygon)
+        return torch.stack(result)
+
+
 if __name__ == "__main__":
-    input = torch.ones(1, 1, 4)
-    t_conv = nn.ConvTranspose1d(in_channels=1, out_channels=1, stride=1, kernel_size=3, padding=0, output_padding=0,
-                                dilation=2, padding_mode="zeros", bias=False)
-    t_conv.weight.data = torch.tensor(data=[[[1, 2, 3]]], dtype=torch.float)
-    print(t_conv(input))
+    # input = torch.ones(1, 1, 4)
+    # t_conv = nn.ConvTranspose1d(in_channels=1, out_channels=1, stride=1, kernel_size=3, padding=0, output_padding=0,
+    #                             dilation=2, padding_mode="zeros", bias=False)
+    # t_conv.weight.data = torch.tensor(data=[[[1, 2, 3]]], dtype=torch.float)
+    # print(t_conv(input))
+
+    # polygon = torch.rand(64).view(1, 2, 32)
+    # ae = ConvAE3(8, 16, 32, True)
+    # print(polygon)
+    # pad_polygon = ae.circular_padding(polygon, 5)
+    # print(pad_polygon.shape)
+
+    im = Image.open("D:\\projects\\shape_dataset\\animal_dataset\\bird\\bird1.tif")
+    img = np.array(im)
+    polygon = im2poly(img, 32)
+    polygon = polygon.transpose()
+    polygon = polygon[np.newaxis, :]
+    print(polygon.shape)
+    polygon = torch.from_numpy(polygon)
+    ae = ConvAEEqualArcLength(8, 16, 32, True, 32)
+    result = ae.equal_arc_length(polygon, 32)
+    result = result.view(2, 32)
+    print(result.shape)
+
+    x = result[0, :]
+    y = result[1, :]
+    plt.scatter(x.numpy(), y.numpy())
+    plt.show()

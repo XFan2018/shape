@@ -8,12 +8,12 @@ from torchvision.datasets.folder import make_dataset, pil_loader
 import torchvision
 from sparse_coding import *
 from image_to_polygon import TurningAngleTransform, PolygonTransform, Angle2VecTransform, RandomRotatePoints, \
-    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2
+    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, RNN, VGG11PolygonCoordinates, \
     VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, ConvAE, \
-    ConvAE2, ConvAE3
+    ConvAE2, ConvAE3, ConvAEEqualArcLength
 from pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -187,7 +187,7 @@ def autoencoder_training_no_es(model, dataloader, criterion, optimizer, num_epoc
             epoch_loss += loss
 
             ########## to delete ###########
-            # if data_index == 20:
+            # if data_index == 2:
             #     break
         img = Image.open(r"D:\projects\shape_dataset\animal_dataset\bird\bird13.tif")
         np_img = np.array(img)  # PIL image to numpy (row, col, channel)
@@ -1255,11 +1255,12 @@ def autoencoder_training():
 
 def Conv_autoencoder_training():
     channel1, channel2, channel3 = args.node_number.split()
-    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number))])
-    # training_set = HemeraDataset(args.dataset, args.extension, transforms=transform)
-    training_set = AnimalDataset(args.dataset, args.extension, transforms=transform)
+    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number)), EqualArclengthTransform(int(args.polygon_number))])
+    training_set = HemeraDataset(args.dataset, args.extension, transforms=transform)
+    # training_set = AnimalDataset(args.dataset, args.extension, transforms=transform)
     dataloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
-    model = ConvAE3(int(channel1), int(channel2), int(channel3))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = ConvAEEqualArcLength(int(channel1), int(channel2), int(channel3), True, 32, device)
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(),
                                 lr=1e-2,
@@ -1268,7 +1269,7 @@ def Conv_autoencoder_training():
     if torch.cuda.is_available():
         model.cuda()
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     autoencoder_training_no_es(model=model,
                                dataloader=dataloader,
                                criterion=criterion,
@@ -1404,8 +1405,8 @@ if __name__ == "__main__":
     # plot(train_loss, valid_loss, stop_point)
     # polygon_testing(model, stop_point=stop_point)
 
-    # Conv_autoencoder_training()
-    evaluate_conv_ae_result()
+    Conv_autoencoder_training()
+    # evaluate_conv_ae_result()
 
     # a = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
     # b = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
