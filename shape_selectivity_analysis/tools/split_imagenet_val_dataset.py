@@ -13,7 +13,7 @@ def copy_folders(src, dst):
         if d.startswith("."):
             continue
         print(d)
-        os.makedirs("D:\\projects\\summerProject2020\\project1\\" + dst + "\\" + d)
+        os.makedirs(dst + "\\" + d)
 
 
 # support method
@@ -51,4 +51,4 @@ def split_folder(original, testing, ratio):
 
 
 # copy_folders("imagenet_val_training_dataset", "imagenet_val_validation_dataset")
-split_folder("imagenet_val_training_dataset", "imagenet_val_validation_dataset", 0.25)
+split_folder(r"D:\projects\shape_dataset\animal_dataset", r"D:\projects\shape_dataset\animal_dataset_validation", 0.2)

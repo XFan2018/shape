@@ -458,6 +458,44 @@ class AE(nn.Module):
         return activation
 
 
+class AE2(nn.Module):
+    def __init__(self, input_shape, hidden_shape1, hidden_shape2, output_shape):
+        super(AE2, self).__init__()
+        self.encoder_hidden_layer = nn.Linear(
+            in_features=input_shape, out_features=hidden_shape1
+        )
+        self.encoder_hidden_layer2 = nn.Linear(
+            in_features=hidden_shape1, out_features=hidden_shape2
+        )
+        self.encoder_output_layer = nn.Linear(
+            in_features=hidden_shape2, out_features=output_shape
+        )
+        self.decoder_hidden_layer = nn.Linear(
+            in_features=output_shape, out_features=hidden_shape2
+        )
+        self.decoder_hidden_layer2 = nn.Linear(
+            in_features=hidden_shape2, out_features=hidden_shape1
+        )
+        self.decoder_output_layer = nn.Linear(
+            in_features=hidden_shape1, out_features=input_shape
+        )
+
+    def forward(self, features):
+        activation = self.encoder_hidden_layer(features)
+        activation = torch.relu(activation)
+        activation = self.encoder_hidden_layer2(activation)
+        activation = torch.relu(activation)
+        code = self.encoder_output_layer(activation)
+        code = torch.relu(code)
+        activation = self.decoder_hidden_layer(code)
+        activation = torch.relu(activation)
+        activation = self.decoder_hidden_layer2(activation)
+        activation = torch.relu(activation)
+        activation = self.decoder_output_layer(activation)
+        # reconstructed = torch.relu(activation)
+        return activation
+
+
 class ConvAE(nn.Module):
     def __init__(self, channel1, channel2, channel3):
         super(ConvAE, self).__init__()
@@ -564,6 +602,7 @@ class ConvAE2(nn.Module):
         return activation
 
 
+# circular padding & upsampling by increasing number of layers
 class ConvAE3(nn.Module):
     def __init__(self, channel1, channel2, channel3, circular):
         super(ConvAE3, self).__init__()
@@ -682,6 +721,192 @@ class ConvAE3(nn.Module):
         if self.circular:
             activation = self.circular_padding(activation, 5)
         activation = self.transpose_conv1d_7(activation)
+        print(activation.shape)
+        return activation
+
+    def circular_padding(self, features, kernel_size):
+        padding_size = (kernel_size - 1) // 2
+        points_num = features.shape[2]
+        bottom_padding = features[:, :, 0:padding_size]
+        # print("bottom_padding", bottom_padding)
+        top_padding = features[:, :, points_num - padding_size:points_num]
+        # print("top_padding", top_padding)
+        result = features.clone()
+        result = torch.cat((top_padding, result, bottom_padding), dim=2)
+        # print("padding result", result)
+        return result
+
+
+# circular padding & upsampling by stride
+class ConvAE4(nn.Module):
+    def __init__(self, channel0, channel1, channel2, channel3, circular):
+        super(ConvAE4, self).__init__()
+        self.circular = circular
+        self.conv1d_1 = nn.Conv1d(channel0, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_4 = nn.Conv1d(channel3, channel3, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:32， 4) -> (channel:16, 8)
+        if circular:
+            padding = 2
+        else:
+            padding = 0
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel3,
+                                                     out_channels=24,
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:16， 8) -> (channel:8, 16)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=24,
+                                                     out_channels=16,
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:8， 16) -> (channel:2, 32)
+        self.transpose_conv1d_3 = nn.ConvTranspose1d(in_channels=16,
+                                                     out_channels=channel0,
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        print(features.shape)
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        print(activation.shape)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
+        print(activation.shape)
+        activation = torch.relu(self.conv1d_3(activation))
+        activation = torch.relu(self.conv1d_4(activation))
+        activation = self.pool1d_3(activation)
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = torch.relu(self.transpose_conv1d_2(activation))
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = self.transpose_conv1d_3(activation)
+        print(activation.shape)
+        return activation
+
+    def circular_padding(self, features, kernel_size):
+        padding_size = (kernel_size - 1) // 2
+        points_num = features.shape[2]
+        bottom_padding = features[:, :, 0:padding_size]
+        # print("bottom_padding", bottom_padding)
+        top_padding = features[:, :, points_num - padding_size:points_num]
+        # print("top_padding", top_padding)
+        result = features.clone()
+        result = torch.cat((top_padding, result, bottom_padding), dim=2)
+        # print("padding result", result)
+        return result
+
+
+# circular padding & upsampling by stride, 1 conv, 1 pooling, 1 de_conv
+class ConvAE1_1(nn.Module):
+    def __init__(self, channel0, channel1, channel2, channel3, circular):
+        super(ConvAE1_1, self).__init__()
+        self.circular = circular
+        self.conv1d_1 = nn.Conv1d(channel0, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:8， 16) -> (channel:2, 32)
+        if circular:
+            padding = 2
+        else:
+            padding = 0
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel1,
+                                                     out_channels=channel0,
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        print(features.shape)
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        print(activation.shape)
+
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = self.transpose_conv1d_1(activation)
+        print(activation.shape)
+        return activation
+
+    def circular_padding(self, features, kernel_size):
+        padding_size = (kernel_size - 1) // 2
+        points_num = features.shape[2]
+        bottom_padding = features[:, :, 0:padding_size]
+        # print("bottom_padding", bottom_padding)
+        top_padding = features[:, :, points_num - padding_size:points_num]
+        # print("top_padding", top_padding)
+        result = features.clone()
+        result = torch.cat((top_padding, result, bottom_padding), dim=2)
+        # print("padding result", result)
+        return result
+
+
+# circular padding & upsampling by stride, 1 conv, 1 pooling, 1 de_conv
+class ConvAE2_2(nn.Module):
+    def __init__(self, channel0, channel1, channel2, channel3, circular):
+        super(ConvAE2_2, self).__init__()
+        self.circular = circular
+        self.conv1d_1 = nn.Conv1d(channel0, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # (channel:16， 8) -> (channel:8, 16)
+        if circular:
+            padding = 2
+        else:
+            padding = 0
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel2,   #16
+                                                     out_channels=channel1,  #8
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+        # (channel:8, 16) -> (channel:2, 32)
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel1,   #8
+                                                     out_channels=channel0,  #2
+                                                     stride=2,
+                                                     kernel_size=5,
+                                                     padding=4,
+                                                     output_padding=1,
+                                                     dilation=1,
+                                                     padding_mode="zeros")
+
+    def forward(self, features):
+        print(features.shape)
+        activation = torch.relu(self.conv1d_1(features))
+        activation = self.pool1d_1(activation)
+        print(activation.shape)
+
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = self.transpose_conv1d_1(activation)
         print(activation.shape)
         return activation
 
@@ -857,7 +1082,7 @@ if __name__ == "__main__":
     # ae = ConvAE3(8, 16, 32, True)
     # print(polygon)
     # pad_polygon = ae.circular_padding(polygon, 5)
-    # print(pad_polygon.shape)
+    # print(pad_polygon)
 
     im = Image.open("D:\\projects\\shape_dataset\\animal_dataset\\bird\\bird1.tif")
     img = np.array(im)

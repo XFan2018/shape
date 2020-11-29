@@ -45,7 +45,7 @@ def im2poly(image, n_samples, normalized=True, whiten=False):
         polygon -= polygon.mean(axis=0)
         #########not change shape############
         polygon /= np.max(np.abs(polygon))
-        polygon *= 0.4
+        # polygon *= 0.4
         ######### change shape ##############
         # print("norm", np.linalg.norm(polygon, axis=0)[np.newaxis])
         # polygon /= np.linalg.norm(polygon, axis=0)[np.newaxis]

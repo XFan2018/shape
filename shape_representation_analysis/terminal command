@@ -4,3 +4,27 @@ python polygon_training.py -dts D:\projects\shape_dataset\Hemera -ext png -m log
 
 polygon coordinates:
 D:\projects\shape\shape_representation_analysis>python polygon_training.py -dts D:\projects\shape_dataset\animal_dataset -ext tif  -pn 32 -epn 1000 -m model_conv_ae_polygon_1dvgg7_128_128_64 -ltrp log_conv_ae_train_polygon_1dvgg7_128_128_64 -ltsp log_conv_ae_test_polygon_1dvgg7_128_128_64 -vs D:\projects\shape_dataset\animal_dataset
+
+
+auto-encoder with es:
+python polygon_training.py -dts D:\projects\shape_dataset\Hemera -ext png -m log_model_AE_es_64_64_32 -epn 50 -ltrp log_training_AE_es_64_64_32 -pn 32 -vs D:\projects\shape_dataset\Hemera_Validation -nn "64 64 32"
+
+polygondataset -autoencoder with es
+python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\polygon_hemera_training.csv -ext png -m log_model_AE_es_64_64_32 -epn 50 -ltrp log_training_AE_es_64_64_32 -pn 32 -vs D:\projects\shape\shape_representation_analysis\polygon_hemera_validation.csv -nn "64 64 32"
+
+AE2 polygondataset -autoencoder with es
+python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\polygon_hemera_training.csv -ext png -m log_model_AE_es_64_64_48_32 -epn 1000 -ltrp log_training_AE_es_64_64_48_32 -pn 32 -vs D:\projects\shape\shape_representation_analysis\polygon_hemera_validation.csv -nn "64 64 48 32"
+
+AE2 polygondataset -autoencoder with es 64
+python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\polygon_hemera_training_64points.csv -ext png -m log_model_AE_es_128_128_96_64 -epn 1000 -ltrp log_training_AE_es_128_128_96_64 -pn 64 -vs D:\projects\shape\shape_representation_analysis\polygon_hemera_validation_64points.csv -nn "128 128 96 64"
+
+ConvAE4 polygondataset -autoencoder with es 32
+python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\polygon_hemera_training.csv -ext png -m log_model_ConvAE4_es_8_16_32 -epn 1000 -ltrp log_training_ConvAE4_es_8_16_32 -pn 32 -vs D:\projects\shape\shape_representation_analysis\polygon_hemera_validation.csv -nn "8 16 32"
+
+
+python polygon_training.py -m log_model_ConvAE4_8_16_32_pretrained -pn 32 -ltrp log_training_ConvAE4_8_16_32_pretrained -ltsp log_testing_ConvAE4_8_16_32_pretrained -ext tif -epn 10000
+python polygon_training.py -m log_model_VGG7_8_16_32_128_128_64_aug -pn 32 -ltrp log_training_VGG7_8_16_32_128_128_64_aug  -ltsp log_testing_VGG7_8_16_32_128_128_64_aug -ext tif -epn 100000
+
+
+Fourier descriptors:
+python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\Fourier_descriptor_hemera_dataset.csv -ext png -m log_model_AE_es_64_64_48_32_Fourier_descriptor2 -epn 10000 -ltrp log_training_AE_es_64_64_48_32_Fourier_descriptor2 -pn 32 -vs D:\projects\shape\shape_representation_analysis\Fourier_descriptor_hemera_dataset_validation.csv -nn "64 64 48 32"

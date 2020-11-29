@@ -4,16 +4,21 @@ from sparse_coding import im2poly
 import matplotlib.pyplot as plt
 from Animal_dataset import AnimalDataset
 from Hemera_dataset import HemeraDataset
+from PolygonAEHemeraDataset import PolygonAEHemeraDataset, TurningAngleAEHemeraDataset, FourierDescriptorAEHemeraDataset
+from PolygonAEAnimalDataset import PolygonAEAnimalDataset, TurningAngleAEAnimalDataset
 from torchvision.datasets.folder import make_dataset, pil_loader
 import torchvision
 from sparse_coding import *
 from image_to_polygon import TurningAngleTransform, PolygonTransform, Angle2VecTransform, RandomRotatePoints, \
-    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform
+    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform, \
+    RandomRotatePoints, \
+    RandomFlipPoints
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, RNN, VGG11PolygonCoordinates, \
-    VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, ConvAE, \
-    ConvAE2, ConvAE3, ConvAEEqualArcLength
+    VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, AE2, \
+    ConvAE4, \
+    ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2
 from pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -35,10 +40,16 @@ parser.add_argument("-ltsp", "--log_testing_path", help="path to the log of test
 args = parser.parse_args()
 
 batch_size = 16
+cuda = 1
 
 
 # for data, label in dataset:
 #     print(data.shape)
+
+def set_bn_eval(module):
+    if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
+        module.eval()
+
 
 def training_no_es(model, dataloader, criterion, optimizer, num_epochs, device, log_training_path, architecture=""):
     model_path = args.model + architecture
@@ -130,6 +141,130 @@ def training_no_es(model, dataloader, criterion, optimizer, num_epochs, device, 
             else:
                 os.mkdir(model_path)
                 torch.save(model, model_path + "/model.pkl" + str(epoch))
+
+
+def train_autoencoder(model,
+                      dataloader,
+                      validloader,
+                      criterion,
+                      optimizer,
+                      num_epochs,
+                      device,
+                      log_training_path,
+                      architecture="",
+                      patience=3):
+    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+    model_path = args.model + architecture
+    stop_point = 0
+    # training loss
+    train_losses = []
+    # validation loss
+    valid_losses = []
+    # average training loss per epoch
+    avg_train_losses = []
+    # average validation loss per epoch
+    avg_valid_losses = []
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    # write to the log_finetune_silhouette every epoch
+    if os.path.exists(log_training_path):
+        epoch_log = open(log_training_path + "/train_epoch_loss.txt", "w+")
+    else:
+        os.mkdir(log_training_path)
+        epoch_log = open(log_training_path + "/train_epoch_loss.txt", "w+")
+
+    epoch_log.write("epoch".ljust(30) +
+                    "epoch loss".ljust(30))
+    epoch_log.close()
+
+    # training
+    for epoch in range(num_epochs):
+
+        print('-' * 10)
+
+        if os.path.exists(log_training_path):
+            epoch_log = open(log_training_path + "/train_epoch_loss.txt", "a+")
+
+        model.train()  # Set model to training mode
+
+        epoch_loss = 0.0
+
+        # Iterate over data.
+        for data_index, inputs in enumerate(dataloader):
+            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+            for param_group in optimizer.param_groups:
+                print("learning rate: ", param_group["lr"])
+            inputs = inputs.to(device)
+
+            print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward
+            with torch.set_grad_enabled(True):
+                # Get model outputs and calculate loss
+                print(inputs.shape)
+                outputs = model(inputs.float())
+                loss = criterion(outputs, inputs.float())
+
+                print(f"\nloss1: {loss.detach():.4f} ")
+
+                loss.backward()
+                optimizer.step()
+                train_losses.append(loss.item())
+
+            epoch_loss += loss.item()
+            ########## to delete ###########
+            # if data_index == 2:
+            #     break
+
+        ######################
+        # validate the model #
+        ######################
+        model.eval()  # prep model for evaluation
+        for data_index, inputs in enumerate(validloader):
+            inputs = inputs.to(device)
+            # forward pass: compute predicted outputs by passing inputs to the model
+            outputs = model(inputs.float())
+            # calculate the loss
+            loss = criterion(outputs, inputs.float())
+            # append validation loss
+            valid_losses.append(loss.item())
+            ########## to delete ###########
+            # if data_index == 2:
+            #     break
+        # print training/validation statistics
+        # calculate average loss per an epoch
+        train_loss = np.average(train_losses)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
+        epoch_result = (f'{epoch:<30} '
+                        f'{train_loss :<30.6f} \n')
+
+        epoch_log.write(epoch_result)
+        epoch_log.close()
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+        # early_stopping needs the validation loss to check if it has decresed,
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, model)
+        if early_stopping.early_stop:
+            print("Early stopping")
+            stop_point = epoch
+            break
+        scheduler.step()
+    if stop_point == 0:
+        stop_point = num_epochs
+    model.load_state_dict(torch.load('checkpoint.pt'))
+    if os.path.exists(model_path):
+        torch.save(model, model_path + "/model.pkl" + str(stop_point - patience))
+    else:
+        os.mkdir(model_path)
+        torch.save(model, model_path + "/model.pkl" + str(stop_point - patience))
+
+    return model, avg_train_losses, avg_valid_losses, stop_point
 
 
 def autoencoder_training_no_es(model, dataloader, criterion, optimizer, num_epochs, device, log_training_path,
@@ -277,6 +412,8 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 
 def training(model, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
+    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
     model_path = args.model + architecture
     stop_point = 0
     # to track the training loss as the model trains
@@ -287,7 +424,7 @@ def training(model, dataloader, validloader, criterion, optimizer, num_epochs, d
     avg_train_losses = []
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = []
-    early_stopping = EarlyStopping(patience=50, verbose=True)
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
     # write to the log_finetune_silhouette every epoch
     if os.path.exists(log_training_path):
         epoch_log = open(log_training_path + "/train_epoch_loss.txt", "w+")
@@ -317,6 +454,9 @@ def training(model, dataloader, validloader, criterion, optimizer, num_epochs, d
 
         # Iterate over data.
         for data_index, (inputs, labels) in enumerate(dataloader):
+            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+            for param_group in optimizer.param_groups:
+                print("learning rate: ", param_group["lr"])
 
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -392,6 +532,7 @@ def training(model, dataloader, validloader, criterion, optimizer, num_epochs, d
             print("Early stopping")
             stop_point = epoch
             break
+        scheduler.step()
     if stop_point == 0:
         stop_point = num_epochs
     model.load_state_dict(torch.load('checkpoint.pt'))
@@ -455,36 +596,62 @@ def testing(model, test_loader, device, model_id, log_testing_path):
     f_log.close()
 
 
+def dfs_freeze(model):
+    for name, child in model.named_children():
+        if name not in ["fc1", "fc2", "fc3"]:
+            print(name)
+            for param in child.parameters():
+                param.requires_grad = False
+        dfs_freeze(child)
+
+
 def polygon_training():
     # input_nodes, hidden1_nodes, hidden2_nodes, output_nodes = args.node_number.split()
-    transform_train = torchvision.transforms.Compose([transforms.RandomHorizontalFlip(0.5),
-                                                      transforms.RandomVerticalFlip(0.05),
-                                                      PolygonTransform(int(args.polygon_number), False),
-                                                      RandomRotatePoints(20)
-                                                      ])
-    transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
-    dataset = AnimalDataset(args.dataset, args.extension, transforms=transform_train)
+    rt = RandomRotatePoints(20)
+    hft = RandomFlipPoints(0.5)
+    vft = RandomFlipPoints(0.05, True)
+    transform = torchvision.transforms.Compose([hft, vft, rt])
+    # transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
+    # dataset = AnimalDataset(args.dataset, args.extension, transforms=transform_train)
+    dataset = PolygonAEAnimalDataset(
+        r"polygon_animal_dataset.csv",
+        r"polygon_animal_dataset_label.csv",
+        transform,
+        twoDim=True)
     dataloader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=16,
+                                             batch_size=batch_size,
                                              shuffle=True)
-    validset = AnimalDataset(args.validset, args.extension, transforms=transform_valid)
+    validset = PolygonAEAnimalDataset(
+        r"polygon_animal_dataset_validation.csv",
+        r"polygon_animal_dataset_label_validation.csv",
+        twoDim=True)
     validloader = torch.utils.data.DataLoader(validset,
-                                              batch_size=16,
+                                              batch_size=batch_size,
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
-    # model = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
+    model = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
     # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
     # model = torch.load(r"D:\projects\summerProject2020\project3\pre_trained_models\pretrained_model_64_64_32")
-    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\pretrained_conv_ae")
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(),
-                                lr=1e-2,
-                                momentum=0.9,
-                                weight_decay=1e-4)
-    if torch.cuda.is_available():
-        model.cuda()
+    device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
+    #model = torch.load(
+    #    r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
+    # model.apply(dfs_freeze)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        model.cuda(torch.device('cuda:' + str(cuda)))
+    print(model)
+
+    # old_state_dict = {}
+    # for key in model.state_dict():
+    #     old_state_dict[key] = model.state_dict()[key].clone()
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=1e-2,
+                                 betas=(0.9, 0.999),
+                                 eps=1e-8,
+                                 weight_decay=1e-4)
+
     model, train_loss, valid_loss, stop_point = training(model=model,
                                                          dataloader=dataloader,
                                                          validloader=validloader,
@@ -493,17 +660,33 @@ def polygon_training():
                                                          num_epochs=int(args.epoch_number),
                                                          device=device,
                                                          log_training_path=args.log_training_path,
-                                                         patience=50)
+                                                         patience=1000)
+
+    # new_state_dict = {}
+    # for key in model.state_dict():
+    #     new_state_dict[key] = model.state_dict()[key].clone()
+    #
+    # # Compare params
+    # count = 0
+    # for key in old_state_dict:
+    #     if not (old_state_dict[key] == new_state_dict[key]).all():
+    #         print('Diff in {}'.format(key))
+    #         count += 1
+    # print(count)
+
     return model, train_loss, valid_loss, stop_point
 
 
 def polygon_testing(model_trained, stop_point):
-    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
-    validset = AnimalDataset(args.validset, args.extension, transforms=transform)
+    # transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
+    validset = PolygonAEAnimalDataset(
+        r"polygon_animal_dataset_validation.csv",
+        r"polygon_animal_dataset_label_validation.csv",
+        twoDim=True)
     valid_loader = torch.utils.data.DataLoader(validset,
-                                               batch_size=16,
+                                               batch_size=batch_size,
                                                shuffle=False)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:"+str(cuda) if torch.cuda.is_available() else "cpu")
     model = model_trained
     testing(model=model,
             test_loader=valid_loader,
@@ -1230,53 +1413,67 @@ def lstm_polygon_coordinates_testing_polygon_set():
 
 
 def autoencoder_training():
-    input_size, hidden_size, output_size = args.node_number.split()
-    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number))])
-    training_set = HemeraDataset(args.dataset, args.extension, transforms=transform)
+    input_size, hidden_size1, hidden_size2, output_size = args.node_number.split()
+    # transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), oneDim=True)])
+    training_set = FourierDescriptorAEHemeraDataset(args.dataset)
+    valid_set = FourierDescriptorAEHemeraDataset(args.validset)
+
     dataloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
-    model = AE(int(input_size), int(hidden_size), int(output_size))
+    validloader = torch.utils.data.DataLoader(valid_set, batch_size=batch_size, shuffle=False)
+
+    model = AE2(int(input_size), int(hidden_size1), int(hidden_size2), int(output_size))
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(),
-                                lr=1e-3,
-                                momentum=0.9,
-                                weight_decay=1e-4)
+    device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        model.to(torch.device('cuda:' + str(cuda)))
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=1e-2,
+                                 betas=(0.9, 0.999),
+                                 eps=1e-8,
+                                 weight_decay=1e-4)
+
+    model, avg_train_losses, avg_valid_losses, stop_point = train_autoencoder(model=model,
+                                                                              dataloader=dataloader,
+                                                                              validloader=validloader,
+                                                                              criterion=criterion,
+                                                                              optimizer=optimizer,
+                                                                              num_epochs=int(args.epoch_number),
+                                                                              device=device,
+                                                                              log_training_path=args.log_training_path,
+                                                                              patience=100)
+    return avg_train_losses, avg_valid_losses, stop_point
+
+
+def conv_autoencoder_training():
+    channel0, channel1, channel2, channel3 = args.node_number.split()
+    # transform = torchvision.transforms.Compose(
+    #     [PolygonTransform(int(args.polygon_number)), EqualArclengthTransform(int(args.polygon_number))])
+    training_set = PolygonAEHemeraDataset(args.dataset, int(args.polygon_number), twoDim=True)
+    valid_set = PolygonAEHemeraDataset(args.validset, int(args.polygon_number), twoDim=True)
+    dataloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
+    validloader = torch.utils.data.DataLoader(valid_set, batch_size=batch_size, shuffle=False)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = ConvAE2_2(int(channel0), int(channel1), int(channel2), int(channel3), circular=True)
+    criterion = nn.MSELoss()
+    # should put model in cuda before construct optimizer for it
     if torch.cuda.is_available():
         model.cuda()
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=1e-2,
+                                 betas=(0.9, 0.999),
+                                 eps=1e-8,
+                                 weight_decay=1e-4)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    autoencoder_training_no_es(model=model,
-                               dataloader=dataloader,
-                               criterion=criterion,
-                               optimizer=optimizer,
-                               num_epochs=int(args.epoch_number),
-                               device=device,
-                               log_training_path=args.log_training_path)
-
-
-def Conv_autoencoder_training():
-    channel1, channel2, channel3 = args.node_number.split()
-    transform = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number)), EqualArclengthTransform(int(args.polygon_number))])
-    training_set = HemeraDataset(args.dataset, args.extension, transforms=transform)
-    # training_set = AnimalDataset(args.dataset, args.extension, transforms=transform)
-    dataloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ConvAEEqualArcLength(int(channel1), int(channel2), int(channel3), True, 32, device)
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(),
-                                lr=1e-2,
-                                momentum=0.9,
-                                weight_decay=1e-4)
-    if torch.cuda.is_available():
-        model.cuda()
-
-
-    autoencoder_training_no_es(model=model,
-                               dataloader=dataloader,
-                               criterion=criterion,
-                               optimizer=optimizer,
-                               num_epochs=int(args.epoch_number),
-                               device=device,
-                               log_training_path=args.log_training_path)
+    model, avg_train_losses, avg_valid_losses, stop_point = train_autoencoder(model=model,
+                                                                              dataloader=dataloader,
+                                                                              validloader=validloader,
+                                                                              criterion=criterion,
+                                                                              optimizer=optimizer,
+                                                                              num_epochs=int(args.epoch_number),
+                                                                              device=device,
+                                                                              log_training_path=args.log_training_path,
+                                                                              patience=100)
+    return avg_train_losses, avg_valid_losses, stop_point
 
 
 def plot(train_loss, valid_loss, stop_point):
@@ -1296,12 +1493,11 @@ def plot(train_loss, valid_loss, stop_point):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    # plt.show()
-    fig.savefig(args.log_testing_path + "_" + str(stop_point) + '_loss_plot.png', bbox_inches='tight')
+    fig.savefig(args.log_training_path + "_" + str(stop_point) + '_loss_plot.png', bbox_inches='tight')
 
 
 def evaluate_ae_result():
-    img = Image.open("D:\\projects\\summerProject2020\\project3\\Hemera\\v1\\1ocloc2.png")
+    img = Image.open(r"D:\projects\shape_dataset\animal_dataset\spider\spider1.tif")
     img.show()
     sample = np.array(img)  # PIL image to numpy (row, col, channel)
     result = im2poly(sample, 32)
@@ -1313,7 +1509,7 @@ def evaluate_ae_result():
     plt.scatter(new_polygon[:, 0], new_polygon[:, 1])
     plt.show()
     print(new_polygon)
-    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\model.pkl")
+    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_64_64_32\model.pkl17")
     input = new_polygon.reshape(-1, 64)[np.newaxis, ...]
     input = torch.tensor(input)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -1326,11 +1522,34 @@ def evaluate_ae_result():
     plt.show()
 
 
-def evaluate_conv_ae_result():
-    model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE3_8_16_32\model.pkl")
-    print(model.state_dict())
+def evaluate_fourier_descriptor_ae_result():
+    img = Image.open(r"D:\projects\shape_dataset\animal_dataset\spider\spider1.tif")
+    # img.show()
+    ft = FourierDescriptorTransform(32)
+    original_fd = ft(img)
+    print(original_fd)
+
+    model = torch.load(
+        r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_64_64_48_32_Fourier_descriptor\model.pkl900")
+    input = original_fd.reshape(-1, 64)[np.newaxis, ...]
+    input = torch.tensor(input)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    img = Image.open(r"D:\projects\shape_dataset\Hemera\v1\1sign.png")
+    input = input.to(device)
+    result = model(input.float())
+    result = np.array(result.cpu().detach())
+    result = result.squeeze(0).reshape(64)
+    print(result)
+    plt.scatter(range(64), result[:], c="b")
+    plt.plot(range(64), result[:], c="b")
+    plt.plot(range(64), original_fd[:], c="r")
+    plt.show()
+
+
+def evaluate_conv_ae_result(conv, model_dir):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = torch.load(model_dir,map_location=device)
+    print(model.state_dict())
+    img = Image.open(r"D:\projects\shape_dataset\Hemera_Validation\v1\010925_0999_0567_lslp.png")
 
     np_img = np.array(img)  # PIL image to numpy (row, col, channel)
     polygon_coordinates_img = im2poly(np_img, 32)
@@ -1343,16 +1562,25 @@ def evaluate_conv_ae_result():
     polygon_coordinates_img = np.vstack((polygon_coordinates_img[idx:], polygon_coordinates_img[0:idx]))
     plt.plot(polygon_coordinates_img[:, 0], polygon_coordinates_img[:, 1])
     original_input = polygon_coordinates_img.transpose()[np.newaxis, ...]
-    print(original_input.shape)
+    print(original_input)
+    if not conv:
+        input = original_input.squeeze(0).flatten()
+    else:
+        input = original_input
 
-    input = torch.tensor(original_input)
+    print(input)
+    input = torch.tensor(input)
     input = input.to(device)
 
     reconstruction = model(input.float())
     reconstruction = np.array(reconstruction.cpu().detach())
+    print(reconstruction.shape)
 
     original_input = original_input.squeeze(0).transpose()
-    reconstruction = reconstruction.squeeze(0).transpose()
+    if conv:
+        reconstruction = reconstruction.squeeze(0).transpose()
+    else:
+        reconstruction = reconstruction.reshape(2, 32).transpose()
     print(reconstruction.shape)
 
     plt.scatter(original_input[:, 0], original_input[:, 1])
@@ -1379,11 +1607,14 @@ def save_pretrained_model(autoencoder_dir, model_save_path):
     torch.save(model1, model_save_path)
 
 
-def save_pretrained_conv_ae(autoencoder_dir, model_save_path):
+def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False):
     # autoencoder_dir = r"D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\model.pkl"
     # model_save_path = r'D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\pretrained_conv_ae'
 
-    model = torch.load(autoencoder_dir)
+    if no_pretrain:
+        model = ConvAE4(8, 16, 32, True)
+    else:
+        model = torch.load(autoencoder_dir)
     model1 = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
     model1.conv1d_1.weight.data = model.state_dict()['conv1d_1.weight']
     model1.conv1d_1.bias.data = model.state_dict()['conv1d_1.bias']
@@ -1405,11 +1636,24 @@ if __name__ == "__main__":
     # plot(train_loss, valid_loss, stop_point)
     # polygon_testing(model, stop_point=stop_point)
 
-    Conv_autoencoder_training()
-    # evaluate_conv_ae_result()
+    # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\model.pkl52")
+    # evaluate_fourier_descriptor_ae_result()
 
     # a = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
     # b = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
     # criterion = torch.nn.MSELoss()
     # loss = criterion(a, b)
     # print(loss)
+
+    # avg_train_losses, avg_valid_losses, stop_point = autoencoder_training()
+    # plot(avg_train_losses, avg_valid_losses, stop_point)
+
+    avg_train_losses, avg_valid_losses, stop_point = conv_autoencoder_training()
+    plot(avg_train_losses, avg_valid_losses, stop_point)
+
+    # save_pretrained_conv_ae(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\model.pkl900",
+    #                         r'D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle')
+    #
+    # model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
+    # print(model)
+    # model.apply(dfs_freeze)

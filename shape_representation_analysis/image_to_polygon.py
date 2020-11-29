@@ -190,25 +190,80 @@ class RandomRotatePoints(object):
 
         rot_matrix = np.array([[np.cos(rot_angle_sample_rads), -np.sin(rot_angle_sample_rads)],
                                [np.sin(rot_angle_sample_rads), np.cos(rot_angle_sample_rads)]])
-        # points = rot_matrix.dot(points)
-        points = points.dot(rot_matrix)
+        points = rot_matrix.dot(points)
+        # points = points.dot(rot_matrix)
 
-        return points
+        return index_start_from_left(points)
+
+
+class RandomFlipPoints(object):
+    '''
+        single input means +/-, None means random, tuple defines range
+    '''
+
+    def __init__(self, probability, vertical=False):
+        assert isinstance(vertical, bool)
+        assert isinstance(probability, (float, int))
+        self.vertical = vertical
+        self.probability = probability
+
+    def __call__(self, points):
+        vertical = self.vertical
+
+        p = np.random.random()
+        if p < self.probability:
+            if vertical:
+                if points.shape[0] == 2:
+                    points[1, :] = -points[1, :]
+                else:
+                    points[:, 1] = -points[:, 1]
+            else:
+                if points.shape[0] == 2:
+                    points[0, :] = -points[0, :]
+                else:
+                    points[:, 0] = -points[:, 0]
+
+        return index_start_from_left(points)
+
+
+def index_start_from_left(points):
+    if points.shape[1] == 2:
+        idx = np.argmin(points[:, 0])
+        return np.vstack((points[idx:], points[0:idx]))
+    else:
+        idx = np.argmin(points[0, :])
+        return np.hstack((points[:, idx:], points[:, 0:idx]))
 
 
 if __name__ == "__main__":
-    im = Image.open(r"D:\projects\shape_dataset\animal_dataset\duck\duck1.tif")
-    etf = EqualArclengthTransform(32)
-    ptf = PolygonTransform(32)
-    polygon = ptf(im)
-    result = etf(polygon)
-    print(result.shape)
-    plt.scatter(result[:, 0], result[:, 1])
-    plt.plot(result[:, 0], result[:, 1])
-    x = np.diff(result[:, 0])
-    y = np.diff(result[:, 1])
-    distance = np.square(x) + np.square(y)
-    plt.show()
-    print(np.square(x))
-    print(np.square(y))
-    print(distance)
+    # im = Image.open(r"D:\projects\shape_dataset\animal_dataset\duck\duck1.tif")
+    # etf = EqualArclengthTransform(32)
+    # ptf = PolygonTransform(32)
+    # polygon = ptf(im)
+    # result = etf(polygon)
+    # print(result.shape)
+    # plt.scatter(result[:, 0], result[:, 1])
+    # plt.plot(result[:, 0], result[:, 1])
+    # x = np.diff(result[:, 0])
+    # y = np.diff(result[:, 1])
+    # distance = np.square(x) + np.square(y)
+    # plt.show()
+    # print(np.square(x))
+    # print(np.square(y))
+    # print(distance)
+
+    ##########Fourier Descriptor################
+    result = np.array([[-2, 2], [0, 0], [2, 2]])
+    contour_complex = np.zeros(result.shape[0], dtype=complex)
+    print(result[:, 0])
+    contour_complex.real = result[:, 0]
+    contour_complex.imag = result[:, 1]
+    fd = np.fft.fft(contour_complex)
+    print(fd)
+    fd_1dim = []
+    for ele in fd:
+        fd_1dim.append(ele.real)
+    for ele in fd:
+        fd_1dim.append(ele.imag)
+    fd_1dim = np.array(fd_1dim)
+    print(fd_1dim)

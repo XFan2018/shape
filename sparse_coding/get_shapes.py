@@ -4,7 +4,7 @@ generate a dataset for dictionary learning
 """
 import sys
 
-sys.path.append("D:\\projects\\summerProject2020\\project3")
+sys.path.append("D:\\projects\\shape\\sparse_coding")
 from sparse_coding import *
 import argparse
 import torchvision

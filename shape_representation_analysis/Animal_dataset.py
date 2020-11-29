@@ -64,8 +64,8 @@ class AnimalDataset(VisionDataset):
         # print(sample.dtype)
         sample = np.transpose(sample)
         sample = sample.copy()
-        sample = torch.tensor(sample)
-        target = torch.tensor(target)
+        # sample = torch.tensor(sample)
+        # target = torch.tensor(target)
         return sample, target
 
     def _find_classes(self, dir):
