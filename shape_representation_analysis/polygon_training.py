@@ -39,8 +39,8 @@ parser.add_argument("-ltrp", "--log_training_path", help="path to the log of tra
 parser.add_argument("-ltsp", "--log_testing_path", help="path to the log of testing")
 args = parser.parse_args()
 
-batch_size = 16
-cuda = 1
+batch_size = 64
+cuda = 0
 
 
 # for data, label in dataset:
@@ -633,7 +633,7 @@ def polygon_training():
     # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
     # model = torch.load(r"D:\projects\summerProject2020\project3\pre_trained_models\pretrained_model_64_64_32")
     device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
-    #model = torch.load(
+    # model = torch.load(
     #    r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
     # model.apply(dfs_freeze)
 
@@ -686,7 +686,7 @@ def polygon_testing(model_trained, stop_point):
     valid_loader = torch.utils.data.DataLoader(validset,
                                                batch_size=batch_size,
                                                shuffle=False)
-    device = torch.device("cuda:"+str(cuda) if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
     model = model_trained
     testing(model=model,
             test_loader=valid_loader,
@@ -1522,32 +1522,64 @@ def evaluate_ae_result():
     plt.show()
 
 
-def evaluate_fourier_descriptor_ae_result():
+def evaluate_fourier_descriptor_ae_result(model_dir, polygon_num):
     img = Image.open(r"D:\projects\shape_dataset\animal_dataset\spider\spider1.tif")
-    # img.show()
-    ft = FourierDescriptorTransform(32)
+    np_img = np.array(img)  # PIL image to numpy (row, col, channel)
+    polygon_coordinates_img = im2poly(np_img, polygon_num)
+
+    # counter clockwise
+    polygon_coordinates_img = np.flip(polygon_coordinates_img, axis=0)
+
+    # index start from the left most point
+    idx = np.argmin(polygon_coordinates_img[:, 0])
+    polygon_coordinates_img = np.vstack((polygon_coordinates_img[idx:], polygon_coordinates_img[0:idx]))
+    original_input = polygon_coordinates_img.transpose()
+    print("original input", original_input.shape)
+
+    # generate Fourier descriptor
+    ft = FourierDescriptorTransform(polygon_num)
     original_fd = ft(img)
     print(original_fd)
 
-    model = torch.load(
-        r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_64_64_48_32_Fourier_descriptor\model.pkl900")
-    input = original_fd.reshape(-1, 64)[np.newaxis, ...]
+    # reconstruct by autoencoder
+    model = torch.load(model_dir)
+    input = original_fd.reshape(-1, polygon_num * 2)[np.newaxis, ...]
     input = torch.tensor(input)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     input = input.to(device)
-    result = model(input.float())
-    result = np.array(result.cpu().detach())
-    result = result.squeeze(0).reshape(64)
-    print(result)
-    plt.scatter(range(64), result[:], c="b")
-    plt.plot(range(64), result[:], c="b")
-    plt.plot(range(64), original_fd[:], c="r")
+    reconstruct_result = model(input.float())
+    reconstruct_result = np.array(reconstruct_result.cpu().detach())
+    reconstruct_result = reconstruct_result.squeeze(0).reshape(polygon_num * 2)
+
+    # reconstruct output Fourier descriptor
+    output_fd_complex = np.zeros(polygon_num, dtype=complex)
+    output_fd_complex.real = reconstruct_result[0:polygon_num]
+    output_fd_complex.imag = reconstruct_result[polygon_num:]
+    fd_reconstruct = np.fft.ifft(output_fd_complex)
+    fd_reconstruct = np.array([fd_reconstruct.real, fd_reconstruct.imag])
+
+    # reconstruct input Fourier descriptor
+    input_fd_complex = np.zeros(polygon_num, dtype=complex)
+    input_fd_complex.real = original_fd[0:polygon_num]
+    input_fd_complex.imag = original_fd[polygon_num:]
+    input_fd_reconstruct = np.fft.ifft(input_fd_complex)
+    input_fd_reconstruct = np.array([input_fd_reconstruct.real, input_fd_reconstruct.imag])
+
+    plt.scatter(range(polygon_num * 2), reconstruct_result[:], c="b")
+    plt.plot(range(polygon_num * 2), reconstruct_result[:], c="b", label="output Fourier descriptor")
+    plt.plot(range(polygon_num * 2), original_fd[:], c="r", label="input Fourier descriptor")
+    plt.legend()
+    plt.show()
+
+    plt.plot(fd_reconstruct[0, :], fd_reconstruct[1, :], c="g", label="autoencoder output fd reconstrution")
+    plt.plot(original_input[0, :], original_input[1, :], c="r", label="polygon coordinates")
+    plt.legend()
     plt.show()
 
 
 def evaluate_conv_ae_result(conv, model_dir):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = torch.load(model_dir,map_location=device)
+    model = torch.load(model_dir, map_location=device)
     print(model.state_dict())
     img = Image.open(r"D:\projects\shape_dataset\Hemera_Validation\v1\010925_0999_0567_lslp.png")
 
@@ -1636,8 +1668,10 @@ if __name__ == "__main__":
     # plot(train_loss, valid_loss, stop_point)
     # polygon_testing(model, stop_point=stop_point)
 
-    # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\model.pkl52")
-    # evaluate_fourier_descriptor_ae_result()
+    # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32\model.pkl428")
+    evaluate_fourier_descriptor_ae_result(
+        r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_64_64_48_32_Fourier_descriptor2\model.pkl1813",
+        32)
 
     # a = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
     # b = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
@@ -1648,8 +1682,8 @@ if __name__ == "__main__":
     # avg_train_losses, avg_valid_losses, stop_point = autoencoder_training()
     # plot(avg_train_losses, avg_valid_losses, stop_point)
 
-    avg_train_losses, avg_valid_losses, stop_point = conv_autoencoder_training()
-    plot(avg_train_losses, avg_valid_losses, stop_point)
+    # avg_train_losses, avg_valid_losses, stop_point = conv_autoencoder_training()
+    # plot(avg_train_losses, avg_valid_losses, stop_point)
 
     # save_pretrained_conv_ae(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\model.pkl900",
     #                         r'D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle')

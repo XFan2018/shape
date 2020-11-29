@@ -866,7 +866,7 @@ class ConvAE1_1(nn.Module):
         return result
 
 
-# circular padding & upsampling by stride, 1 conv, 1 pooling, 1 de_conv
+# circular padding & upsampling by stride, 2 conv, 2 pooling, 2 de_conv
 class ConvAE2_2(nn.Module):
     def __init__(self, channel0, channel1, channel2, channel3, circular):
         super(ConvAE2_2, self).__init__()
@@ -902,11 +902,17 @@ class ConvAE2_2(nn.Module):
         print(features.shape)
         activation = torch.relu(self.conv1d_1(features))
         activation = self.pool1d_1(activation)
+        activation = torch.relu(self.conv1d_2(activation))
+        activation = self.pool1d_2(activation)
         print(activation.shape)
 
         if self.circular:
             activation = self.circular_padding(activation, 3)
-        activation = self.transpose_conv1d_1(activation)
+        activation = torch.relu(self.transpose_conv1d_1(activation))
+        print(activation.shape)
+        if self.circular:
+            activation = self.circular_padding(activation, 3)
+        activation = self.transpose_conv1d_2(activation)
         print(activation.shape)
         return activation
 
