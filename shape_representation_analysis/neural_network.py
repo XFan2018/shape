@@ -213,6 +213,26 @@ class RNN(nn.Module):
         return torch.zeros(batch_size, self.hidden_size).cuda()
 
 
+class CNN2(nn.Module):
+    def __init__(self, channel0, channel1, input1, input2, output):
+        super(CNN2, self).__init__()
+        self.conv1d_1 = nn.Conv1d(channel0, channel1, kernel_size=3, padding=1, padding_mode="circular")
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.fc2 = nn.Linear(input2, output)
+
+    def forward(self, x):
+        print(x.shape)
+        x = torch.relu(self.conv1d_1(x))
+        x = self.pool1d_1(x)
+        x = x.view((-1, self.input1))
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        print(x.shape)
+        return x
+
+
 class VGG11PolygonCoordinates(nn.Module):
     def __init__(self, channel1, channel2, channel3, channel4, input1, input2, input3):
         super(VGG11PolygonCoordinates, self).__init__()
@@ -315,16 +335,16 @@ class VGG7PolygonCoordinates(nn.Module):
     def forward(self, x):
         # x.unsqueeze_(1)
         print(x.shape)
-        x = torch.tanh(self.conv1d_1(x))
+        x = torch.relu(self.conv1d_1(x))
         x = self.pool1d_1(x)
-        x = torch.tanh(self.conv1d_2(x))
+        x = torch.relu(self.conv1d_2(x))
         x = self.pool1d_2(x)
-        x = torch.tanh(self.conv1d_3(x))
-        x = torch.tanh(self.conv1d_4(x))
+        x = torch.relu(self.conv1d_3(x))
+        x = torch.relu(self.conv1d_4(x))
         x = self.pool1d_3(x)
         x = x.view((-1, self.input1))
-        x = torch.tanh(self.fc1(x))
-        x = torch.tanh(self.fc2(x))
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
         x = self.fc3(x)
         print(x.shape)
         return x
@@ -822,7 +842,7 @@ class ConvAE4(nn.Module):
 
 # circular padding & upsampling by stride, 1 conv, 1 pooling, 1 de_conv
 class ConvAE1_1(nn.Module):
-    def __init__(self, channel0, channel1, channel2, channel3, circular):
+    def __init__(self, channel0, channel1, circular):
         super(ConvAE1_1, self).__init__()
         self.circular = circular
         self.conv1d_1 = nn.Conv1d(channel0, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32

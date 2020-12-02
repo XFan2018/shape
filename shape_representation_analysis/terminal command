@@ -27,4 +27,4 @@ python polygon_training.py -m log_model_VGG7_8_16_32_128_128_64_aug -pn 32 -ltrp
 
 
 Fourier descriptors:
-python polygon_training.py -dts D:\projects\shape\shape_representation_analysis\Fourier_descriptor_hemera_dataset.csv -ext png -m log_model_AE_es_64_64_48_32_Fourier_descriptor2 -epn 10000 -ltrp log_training_AE_es_64_64_48_32_Fourier_descriptor2 -pn 32 -vs D:\projects\shape\shape_representation_analysis\Fourier_descriptor_hemera_dataset_validation.csv -nn "64 64 48 32"
+python polygon_training.py -dts Fourier_descriptor_hemera_dataset.csv -ext png -m log_model_AE_es_64_64_48_32_Fourier_descriptor_128 -epn 10000 -ltrp log_training_AE_es_64_64_48_32_Fourier_descriptor_128 -pn 128 -vs Fourier_descriptor_hemera_dataset_validation.csv -nn "256 256 192 128"

@@ -17,8 +17,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, RNN, VGG11PolygonCoordinates, \
     VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, AE2, \
-    ConvAE4, \
-    ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2
+    ConvAE4, ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2, CNN2
 from pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -39,7 +38,7 @@ parser.add_argument("-ltrp", "--log_training_path", help="path to the log of tra
 parser.add_argument("-ltsp", "--log_testing_path", help="path to the log of testing")
 args = parser.parse_args()
 
-batch_size = 64
+batch_size = 16
 cuda = 0
 
 
@@ -631,7 +630,8 @@ def polygon_training():
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     model = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
     # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
-    # model = torch.load(r"D:\projects\summerProject2020\project3\pre_trained_models\pretrained_model_64_64_32")
+    # model = torch.load(
+    #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
     device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
     # model = torch.load(
     #    r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
@@ -1424,13 +1424,13 @@ def autoencoder_training():
     model = AE2(int(input_size), int(hidden_size1), int(hidden_size2), int(output_size))
     criterion = nn.MSELoss()
     device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available():
-        model.to(torch.device('cuda:' + str(cuda)))
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=1e-2,
                                  betas=(0.9, 0.999),
                                  eps=1e-8,
                                  weight_decay=1e-4)
+    if torch.cuda.is_available():
+        model.to(torch.device('cuda:' + str(cuda)))
 
     model, avg_train_losses, avg_valid_losses, stop_point = train_autoencoder(model=model,
                                                                               dataloader=dataloader,
@@ -1581,7 +1581,7 @@ def evaluate_conv_ae_result(conv, model_dir):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = torch.load(model_dir, map_location=device)
     print(model.state_dict())
-    img = Image.open(r"D:\projects\shape_dataset\Hemera_Validation\v1\010925_0999_0567_lslp.png")
+    img = Image.open(r"D:\projects\shape_dataset\animal_dataset\bird\bird1.tif")
 
     np_img = np.array(img)  # PIL image to numpy (row, col, channel)
     polygon_coordinates_img = im2poly(np_img, 32)
@@ -1644,50 +1644,47 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
     # model_save_path = r'D:\projects\shape\shape_representation_analysis\log_model_Conv_AE_8_16_32\pretrained_conv_ae'
 
     if no_pretrain:
-        model = ConvAE4(8, 16, 32, True)
+        model = ConvAE1_1(2, 8, True)
     else:
         model = torch.load(autoencoder_dir)
-    model1 = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
+    model1 = CNN2(2, 8, 128, 64, 17)
     model1.conv1d_1.weight.data = model.state_dict()['conv1d_1.weight']
     model1.conv1d_1.bias.data = model.state_dict()['conv1d_1.bias']
-    model1.conv1d_2.weight.data = model.state_dict()['conv1d_2.weight']
-    model1.conv1d_2.bias.data = model.state_dict()['conv1d_2.bias']
-    model1.conv1d_3.weight.data = model.state_dict()['conv1d_3.weight']
-    model1.conv1d_3.bias.data = model.state_dict()['conv1d_3.bias']
-    model1.conv1d_4.weight.data = model.state_dict()['conv1d_4.weight']
-    model1.conv1d_4.bias.data = model.state_dict()['conv1d_4.bias']
+    # model1.conv1d_2.weight.data = model.state_dict()['conv1d_2.weight']
+    # model1.conv1d_2.bias.data = model.state_dict()['conv1d_2.bias']
+    # model1.conv1d_3.weight.data = model.state_dict()['conv1d_3.weight']
+    # model1.conv1d_3.bias.data = model.state_dict()['conv1d_3.bias']
+    # model1.conv1d_4.weight.data = model.state_dict()['conv1d_4.weight']
+    # model1.conv1d_4.bias.data = model.state_dict()['conv1d_4.bias']
 
-    print(model1.conv1d_4.weight.data)
-    print(model.state_dict()['conv1d_4.weight'])
+    print(model1.conv1d_1.weight.data)
+    print(model.state_dict()['conv1d_1.weight'])
 
     torch.save(model1, model_save_path)
 
 
 if __name__ == "__main__":
-    # model, train_loss, valid_loss, stop_point = polygon_training()
-    # plot(train_loss, valid_loss, stop_point)
-    # polygon_testing(model, stop_point=stop_point)
+    ################# train/test classifier #####################
+    model, train_loss, valid_loss, stop_point = polygon_training()
+    plot(train_loss, valid_loss, stop_point)
+    polygon_testing(model, stop_point=stop_point)
 
-    # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32\model.pkl428")
-    evaluate_fourier_descriptor_ae_result(
-        r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_64_64_48_32_Fourier_descriptor2\model.pkl1813",
-        32)
+    ################# evaluate convolutional auto-encoder #####################
+    # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")
 
-    # a = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
-    # b = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=torch.float)
-    # criterion = torch.nn.MSELoss()
-    # loss = criterion(a, b)
-    # print(loss)
+    ################# evaluate Fourier descriptor auto-encoder #####################
+    # evaluate_fourier_descriptor_ae_result(
+    #     r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64\model.pkl916",
+    #     128)
 
+    ################# train fully connected autoencoder #####################
     # avg_train_losses, avg_valid_losses, stop_point = autoencoder_training()
     # plot(avg_train_losses, avg_valid_losses, stop_point)
 
+    ################# train convolutional autoencoder #####################
     # avg_train_losses, avg_valid_losses, stop_point = conv_autoencoder_training()
     # plot(avg_train_losses, avg_valid_losses, stop_point)
 
-    # save_pretrained_conv_ae(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\model.pkl900",
-    #                         r'D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle')
-    #
-    # model = torch.load(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
-    # print(model)
-    # model.apply(dfs_freeze)
+    ################# save auto-encoder pretrained auto-encoder #####################
+    # save_pretrained_conv_ae(r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\model.pkl52",
+    #                         r'D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl')

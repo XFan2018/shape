@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 class PolygonAEHemeraDataset():
     """
@@ -88,18 +88,24 @@ class FourierDescriptorAEHemeraDataset():
 
 
 if __name__ == "__main__":
-    dataset = PolygonAEHemeraDataset(r'D:\projects\shape\shape_representation_analysis\polygon_hemera_training.csv', twoDim=True)
+    dataset = FourierDescriptorAEHemeraDataset(r'D:\projects\shape\shape_representation_analysis\Fourier_descriptor_hemera_dataset_128.csv', 128, twoDim=False)
     dataiter = iter(dataset)
     data = next(dataiter)
     data = next(dataiter)
+    data = next(dataiter)
+    data = next(dataiter)
+    data = next(dataiter)
+    data = next(dataiter)
     print(data)
-    plt.scatter(data[0, :], data[1, :])
+
+    output_fd_complex = np.zeros(128, dtype=complex)
+    output_fd_complex.real = data[0:128]
+    output_fd_complex.imag = data[128:]
+    fd_reconstruct = np.fft.ifft(output_fd_complex)
+    fd_reconstruct = np.array([fd_reconstruct.real, fd_reconstruct.imag])
+
+    plt.scatter(fd_reconstruct[0, :], fd_reconstruct[1, :])
     plt.show()
-    x = torch.tensor([[1,2],[3,4]]).float()
-    y = torch.tensor([[1,2],[3,5]]).float()
-    c = torch.nn.MSELoss()
-    loss = c(x,y)
-    print(loss)
 
     ############ Random Rotate ############
 

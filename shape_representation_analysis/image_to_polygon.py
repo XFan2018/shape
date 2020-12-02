@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch_interpolations
 import torch
 import numpy as np
+import random
 from PIL import Image
 
 
@@ -197,9 +198,6 @@ class RandomRotatePoints(object):
 
 
 class RandomFlipPoints(object):
-    '''
-        single input means +/-, None means random, tuple defines range
-    '''
 
     def __init__(self, probability, vertical=False):
         assert isinstance(vertical, bool)
@@ -224,6 +222,21 @@ class RandomFlipPoints(object):
                     points[:, 0] = -points[:, 0]
 
         return index_start_from_left(points)
+
+
+class IndexRotate(object):
+
+    def __call__(self, points):
+        print(points)
+        if points.shape[0] == 2:
+            rand = random.randrange(points.shape[1])
+            points = np.roll(points, rand, axis=1)
+            print(points)
+        else:
+            rand = random.randrange(points.shape[0])
+            points = np.roll(points, rand, axis=0)
+            print(points)
+        return points
 
 
 def index_start_from_left(points):
@@ -267,3 +280,5 @@ if __name__ == "__main__":
         fd_1dim.append(ele.imag)
     fd_1dim = np.array(fd_1dim)
     print(fd_1dim)
+
+
