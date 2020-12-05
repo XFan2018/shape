@@ -3,7 +3,7 @@ import os
 import numpy as np
 import torchvision
 import torchvision.transforms as transforms
-
+import random
 from settings import *
 from shape_selectivity_analysis.checkerboard_training.scrambleTransform import HorizontalScrambleTransform
 from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checker_board_intact_gray, \
@@ -15,13 +15,11 @@ cate_dict = {
     1: "bicycle",
     2: "boat",
     3: "bottle",
-    4: "cat",
-    5: "car",
+    4: "car",
+    5: "cat",
     6: "clock",
     7: "keyboard"
 }
-
-
 
 for x in block_sizes:
     trans_intact = transforms.Compose([transforms.Resize(256),
@@ -47,19 +45,19 @@ for x in block_sizes:
         except StopIteration:
             break
     i = 0
-    while True:
-        try:
-            data_intact, label_intact = next(it_intact)
-            data_intact = np.array(data_intact)
-            data_jumbled = random.sample(list_jumbled, 1)[0]
-            cate = cate_dict[label_intact]
-            print(cate)
-            img = checker_board(data_intact, data_jumbled, x, True)
-            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            i = (i + 1) % 25
-        except StopIteration:
-            break
-            
+    # while True:
+    #     try:
+    #         data_intact, label_intact = next(it_intact)
+    #         data_intact = np.array(data_intact)
+    #         data_jumbled = random.sample(list_jumbled, 1)[0]
+    #         cate = cate_dict[label_intact]
+    #         print(cate)
+    #         img = checker_board(data_intact, data_jumbled, x, True)
+    #         img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+    #         i = (i + 1) % 25
+    #     except StopIteration:
+    #         break
+
     while True:
         try:
             data_intact, label_intact = next(it_intact)
@@ -71,5 +69,3 @@ for x in block_sizes:
             i = (i + 1) % 25
         except StopIteration:
             break
-
-
