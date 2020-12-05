@@ -1,28 +1,28 @@
 import torch
 import torchvision
 from PIL import Image
-from scrambleImage import scramble_image, scramble_image_row
+from shape_selectivity_analysis.checkerboard_training.scrambleImage import scramble_image, scramble_image_row
 import torchvision.transforms as transforms
 import numpy as np
 import random
 
-im1 = Image.open(
-    "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\5451110_99f37d8942.jpg")
-im2 = Image.open(
-    "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\357588977_a8135675c7.jpg")
+# im1 = Image.open(
+#     "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\5451110_99f37d8942.jpg")
+# im2 = Image.open(
+#     "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\357588977_a8135675c7.jpg")
 
 transform = torchvision.transforms.Compose(
     [torchvision.transforms.Resize(256),
      torchvision.transforms.CenterCrop(224)])
 
 # resize image to 224
-im1 = transform(im1)
-im2 = transform(im2)
-im1 = np.array(im1)
-im2 = np.array(im2)
+# im1 = transform(im1)
+# im2 = transform(im2)
+# im1 = np.array(im1)
+# im2 = np.array(im2)
 
 
-def checker_board(im1, im2, size, horizontal_only=False):
+def checker_board(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=False):
     """
     :param im1: ground truth image （numpy）
     :param im2: adversarial attack image (numpy)
@@ -252,4 +252,3 @@ if __name__ == "__main__":
     # im1 = transform2(im1)
     #
     im1_new.show()
-

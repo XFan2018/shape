@@ -1,5 +1,5 @@
 import numpy as np
-from scrambleImage import scramble_image, scramble_image_row
+from shape_selectivity_analysis.checkerboard_training.scrambleImage import scramble_image, scramble_image_row
 import random
 
 
