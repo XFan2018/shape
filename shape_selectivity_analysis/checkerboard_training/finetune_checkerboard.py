@@ -2,8 +2,8 @@ import time
 import torch
 import numpy as np
 import os
-from scramble_checker_board import checker_board_batch
-from pytorchtools import EarlyStopping
+from scramble_checkerboard import checker_board_batch
+from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
 import torchvision.transforms as transforms
 
 """

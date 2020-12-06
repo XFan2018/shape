@@ -2,6 +2,7 @@ import torch
 import torchvision
 from Vgg16Model_CheckerBoard_train import ConfigTrainImagenet
 from finetune_checkerboard import train_model
+from finetune_gray_checkerboard import train_model_gray
 from test_checkerboard import test_model
 from test_checkerboard_intact import test_model_intact
 from test_checkerboard_gray import test_model_gray
@@ -34,7 +35,7 @@ def dfs_freeze(model):
 
 def run_train_finetune(block_size, horizontal):
     config_train = ConfigTrainImagenet(args.dataset, int(args.epochs), float(args.learning_rate), shuffle=True)
-    config_valid = ConfigTrainImagenet(args.validset, int(args.epochs), float(args.learning_rate), shuffle=True)
+    config_valid = ConfigTrainImagenet(args.validset, int(args.epochs), float(args.learning_rate), shuffle=False)
     train_dataloader = config_train.loader
     valid_dataloader = config_valid.loader
     model = torchvision.models.vgg16_bn(True)
@@ -69,6 +70,56 @@ def run_train_finetune(block_size, horizontal):
                                                                                 fc_only=bool(args.fc_only),
                                                                                 patience=20,
                                                                                 horizontal=horizontal)
+
+    if bool(args.fc_only):
+        new_state_dict = {}
+        for key in model.state_dict():
+            new_state_dict[key] = model.state_dict()[key].clone()
+        # Compare params
+        count = 0
+        for key in old_state_dict:
+            if not (old_state_dict[key] == new_state_dict[key]).all():
+                print('Diff in {}'.format(key))
+                count += 1
+        print(count)
+    return model_trained, avg_train_losses, avg_valid_losses, stop_point
+
+
+def run_train_finetune_gray(block_size, horizontal):
+    config_train = ConfigTrainImagenet(args.dataset, int(args.epochs), float(args.learning_rate), shuffle=True)
+    config_valid = ConfigTrainImagenet(args.validset, int(args.epochs), float(args.learning_rate), shuffle=False)
+    train_dataloader = config_train.loader
+    valid_dataloader = config_valid.loader
+    model = torchvision.models.vgg16_bn(True)
+    if bool(args.fc_only):
+        model.apply(dfs_freeze)
+    if torch.cuda.is_available():
+        model.cuda()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    old_state_dict = {}
+    if bool(args.fc_only):
+        for key in model.state_dict():
+            old_state_dict[key] = model.state_dict()[key].clone()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(),
+                                lr=config_train.lr)
+
+    model_trained, avg_train_losses, avg_valid_losses, stop_point = train_model_gray(model=model,
+                                                                                     trainloaders1=train_dataloader,
+                                                                                     validloaders1=valid_dataloader,
+                                                                                     criterion=criterion,
+                                                                                     optimizer=optimizer,
+                                                                                     num_epochs=config_train.epochs,
+                                                                                     device=device,
+                                                                                     batch_size=config_train.batch_size,
+                                                                                     model_path=args.model_path + "_" + str(
+                                                                                         block_size),
+                                                                                     log_path=args.log_training_path + "_" + str(
+                                                                                         block_size),
+                                                                                     block_size=block_size,
+                                                                                     fc_only=bool(args.fc_only),
+                                                                                     patience=20,
+                                                                                     horizontal=horizontal)
 
     if bool(args.fc_only):
         new_state_dict = {}
@@ -179,6 +230,19 @@ def run(block_size, horizontal):
     run_test_gray(model_trained, block_size, 0, False, horizontal)
 
 
+def run_gray(block_size, horizontal):
+    model_trained, train_loss, valid_loss, stop_point = run_train_finetune_gray(block_size, horizontal)
+    plot(block_size, train_loss, valid_loss)
+    run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
+    run_test_intact(model_trained, block_size, stop_point)
+    run_test_scrambled(model_trained, block_size, stop_point, horizontal)
+    run_test_gray(model_trained, block_size, stop_point, True, horizontal)
+    run_test_gray(model_trained, block_size, stop_point, False, horizontal)
+    model_trained = torchvision.models.vgg16_bn(True)
+    run_test_gray(model_trained, block_size, 0, True, horizontal)
+    run_test_gray(model_trained, block_size, 0, False, horizontal)
+
+
 def plot(block_size, train_loss, valid_loss):
     fig = plt.figure(figsize=(10, 8))
     plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
@@ -200,4 +264,4 @@ def plot(block_size, train_loss, valid_loss):
 
 
 if __name__ == "__main__":
-    run(int(args.block_size), True)
+    run_gray(int(args.block_size), True)

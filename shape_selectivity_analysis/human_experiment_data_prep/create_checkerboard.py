@@ -45,19 +45,19 @@ for x in block_sizes:
         except StopIteration:
             break
     i = 0
-    # while True:
-    #     try:
-    #         data_intact, label_intact = next(it_intact)
-    #         data_intact = np.array(data_intact)
-    #         data_jumbled = random.sample(list_jumbled, 1)[0]
-    #         cate = cate_dict[label_intact]
-    #         print(cate)
-    #         img = checker_board(data_intact, data_jumbled, x, True)
-    #         img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-    #         i = (i + 1) % 25
-    #     except StopIteration:
-    #         break
-
+    while True:
+        try:
+            data_intact, label_intact = next(it_intact)
+            data_intact = np.array(data_intact)
+            data_jumbled = random.sample(list_jumbled, 1)[0]
+            cate = cate_dict[label_intact]
+            print(cate)
+            img = checker_board(data_intact, data_jumbled, x, True)
+            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            i = (i + 1) % 25
+        except StopIteration:
+            break
+    i = 0
     while True:
         try:
             data_intact, label_intact = next(it_intact)

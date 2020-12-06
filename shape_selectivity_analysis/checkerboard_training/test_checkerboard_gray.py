@@ -1,7 +1,7 @@
 import time
 import torch
 from os import path
-from scramble_checker_board import checker_board_scrambled_gray_batch, checker_board_intact_gray_batch
+from scramble_checkerboard import checker_board_scrambled_gray_batch, checker_board_intact_gray_batch
 import os
 
 

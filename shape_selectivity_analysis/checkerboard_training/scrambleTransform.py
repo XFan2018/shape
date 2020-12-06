@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append(r"D:\projects\shape")
 from shape_selectivity_analysis.checkerboard_training.scrambleImage import scramble_image, scramble_image_row
 import random
 

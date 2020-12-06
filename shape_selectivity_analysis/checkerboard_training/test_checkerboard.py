@@ -2,7 +2,7 @@ import time
 import torch
 import numpy as np
 import os
-from scramble_checker_board import checker_board_batch
+from scramble_checkerboard import checker_board_batch
 import torchvision.transforms as transforms
 
 """
