@@ -41,8 +41,8 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
     model.eval()
 
     running_corrects = 0
-    running_corrects_top5 = 0
-    confidence_score = 0
+    # running_corrects_top5 = 0
+    # confidence_score = 0
 
     # test model
     for index, (inputs, labels) in enumerate(test_loader):
@@ -94,15 +94,15 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
 def run_human_test_checkerboard():
     ################### prepare parameters ########################
     model = torchvision.models.vgg16_bn(pretrained=True)
-    dataset_path = r"D:\projects\shape_dataset\checkerboard_gray_dataset_human\blocksize56"
+    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN, "blocksize7")
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
     dataset = torchvision.datasets.ImageFolder(dataset_path, transform)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=False, num_workers=2)
-    lr = 1e-3
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    # lr = 1e-3
+    # criterion = nn.CrossEntropyLoss()
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         model.cuda()

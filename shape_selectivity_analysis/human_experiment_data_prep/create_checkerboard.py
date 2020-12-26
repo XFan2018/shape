@@ -4,21 +4,23 @@ import numpy as np
 import torchvision
 import torchvision.transforms as transforms
 import random
+from PIL import Image
 from settings import *
+from shape_selectivity_analysis.checkerboard_training.scrambleImage import scramble_image_row
 from shape_selectivity_analysis.checkerboard_training.scrambleTransform import HorizontalScrambleTransform
 from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checker_board_intact_gray, \
     checker_board
 
-block_sizes = [8, 16, 28, 56]
+block_sizes = [7, 14, 28, 56]
 cate_dict = {
     0: "bear",
-    1: "bicycle",
+    1: "bird",
     2: "boat",
     3: "bottle",
-    4: "car",
-    5: "cat",
-    6: "clock",
-    7: "keyboard"
+    4: "cat",
+    5: "chair",
+    6: "dog",
+    7: "truck"
 }
 
 for x in block_sizes:
@@ -41,7 +43,7 @@ for x in block_sizes:
     while True:
         try:
             data_jumbled, label_jumbled = next(it_jumbled)
-            list_jumbled.append(data_jumbled)
+            list_jumbled.append((data_jumbled, label_jumbled))
         except StopIteration:
             break
     i = 0
@@ -49,12 +51,21 @@ for x in block_sizes:
         try:
             data_intact, label_intact = next(it_intact)
             data_intact = np.array(data_intact)
-            data_jumbled = random.sample(list_jumbled, 1)[0]
+            data_jumbled, label_jumbled = random.choice(list_jumbled)
+            while label_jumbled == label_intact:
+                data_jumbled, label_jumbled = random.choice(list_jumbled)
             cate = cate_dict[label_intact]
             print(cate)
             img = checker_board(data_intact, data_jumbled, x, True)
+            img_intact = Image.fromarray(data_intact)
+            temp = np.transpose(data_intact, (2, 0, 1))
+            temp = scramble_image_row(temp, x, x)
+            temp = np.transpose(temp, (1, 2, 0))
+            img_jumbled = Image.fromarray(temp)
             img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            i = (i + 1) % 25
+            img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            i = (i + 1) % 50
         except StopIteration:
             break
     i = 0
@@ -66,6 +77,6 @@ for x in block_sizes:
             print(cate)
             img = checker_board_intact_gray(data_intact, x)
             img.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            i = (i + 1) % 25
+            i = (i + 1) % 50
         except StopIteration:
             break

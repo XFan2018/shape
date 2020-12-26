@@ -22,7 +22,7 @@ parser.add_argument("-mp", "--model_path", help="model path")
 parser.add_argument("-fc", "--fc_only", help="train fc only")
 parser.add_argument("-bs", "--block_size", help="block size of checkerboard")
 args = parser.parse_args()
-block_sizes = [112, 56, 28, 16, 8]
+block_sizes = [14, 7]
 
 
 def dfs_freeze(model):

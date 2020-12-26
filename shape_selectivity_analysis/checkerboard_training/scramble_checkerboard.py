@@ -26,7 +26,7 @@ def checker_board(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=F
     """
     :param im1: ground truth image （numpy）
     :param im2: adversarial attack image (numpy)
-    :param size: checker board block sizes
+    :param size: checkerboard block sizes
     :param horizontal_only: scrambled horizontally
     :return: checker board image that combines ground truth image and scrambled adversarial attack image (PIL)
     """

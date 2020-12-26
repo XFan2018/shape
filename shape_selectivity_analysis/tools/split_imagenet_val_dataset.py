@@ -1,10 +1,11 @@
 import os
 import random
+import shutil
 
 
 def copy_folders(src, dst):
     """
-    :param src: path of the folder to be copied
+    :param src: path of the original folder
     :param dst: path to place the copy folder
     """
     arr = os.listdir(src)
@@ -50,5 +51,20 @@ def split_folder(original, testing, ratio):
             os.rename(original + "\\" + folder + "\\" + file, testing + "\\" + folder + "\\" + file)
 
 
-# copy_folders("imagenet_val_training_dataset", "imagenet_val_validation_dataset")
-split_folder(r"D:\projects\shape_dataset\animal_dataset", r"D:\projects\shape_dataset\animal_dataset_validation", 0.2)
+def create_subset(original_folder_path, new_folder_path, subset_number):
+    copy_folders(original_folder_path, new_folder_path)
+    folders_in_original_dataset = os.listdir(original_folder_path)
+    for folder in folders_in_original_dataset:
+        if folder == ".DS_Store":
+            continue
+        files = os.listdir(original_folder_path + "\\" + folder)
+        new_files = random.sample(files, subset_number)
+        for file in new_files:
+            shutil.copy(os.path.join(original_folder_path, folder, file), os.path.join(new_folder_path, folder))
+
+
+# copy_folders(r"D:\projects\shape_dataset\imagenet_val", r"D:\projects\shape\shape_selectivity_analysis\tools\demo")
+# split_folder(r"D:\projects\shape_dataset\animal_dataset", r"D:\projects\shape_dataset\animal_dataset_validation", 0.2)
+# create_demo_files(r"D:\projects\shape\shape_selectivity_analysis\tools\demo")
+create_subset(r"D:\projects\shape\shape_selectivity_analysis\tools\demo",
+              r"D:\projects\shape\shape_selectivity_analysis\tools\new_demo", 5)
