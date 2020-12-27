@@ -1,5 +1,10 @@
 import torch
 import torchvision
+import sys
+import os
+sys.path.append(os.path.split(sys.path[0])[0])
+sys.path.append(os.path.split(sys.path[-1])[0])
+print(sys.path)
 from shape_selectivity_analysis.checkerboard_training.Vgg16Model_CheckerBoard_train import ConfigTrainImagenet
 from shape_selectivity_analysis.checkerboard_training.finetune_checkerboard import train_model
 from shape_selectivity_analysis.checkerboard_training.finetune_gray_checkerboard import train_model_gray
