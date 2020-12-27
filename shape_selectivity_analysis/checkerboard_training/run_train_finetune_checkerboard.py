@@ -22,7 +22,7 @@ parser.add_argument("-mp", "--model_path", help="model path")
 parser.add_argument("-fc", "--fc_only", help="train fc only")
 parser.add_argument("-bs", "--block_size", help="block size of checkerboard")
 args = parser.parse_args()
-block_sizes = [14, 7]
+block_sizes = [7, 14, 28, 56]
 
 
 def dfs_freeze(model):
@@ -220,14 +220,14 @@ def run_test_gray(model_trained, block_size, stop_point, intact, horizontal):
 def run(block_size, horizontal):
     model_trained, train_loss, valid_loss, stop_point = run_train_finetune(block_size, horizontal)
     plot(block_size, train_loss, valid_loss)
-    run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
-    run_test_intact(model_trained, block_size, stop_point)
-    run_test_scrambled(model_trained, block_size, stop_point, horizontal)
-    run_test_gray(model_trained, block_size, stop_point, True, horizontal)
-    run_test_gray(model_trained, block_size, stop_point, False, horizontal)
-    model_trained = torchvision.models.vgg16_bn(True)
-    run_test_gray(model_trained, block_size, 0, True, horizontal)
-    run_test_gray(model_trained, block_size, 0, False, horizontal)
+    # run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
+    # run_test_intact(model_trained, block_size, stop_point)
+    # run_test_scrambled(model_trained, block_size, stop_point, horizontal)
+    # run_test_gray(model_trained, block_size, stop_point, True, horizontal)
+    # run_test_gray(model_trained, block_size, stop_point, False, horizontal)
+    # model_trained = torchvision.models.vgg16_bn(True)
+    # run_test_gray(model_trained, block_size, 0, True, horizontal)
+    # run_test_gray(model_trained, block_size, 0, False, horizontal)
 
 
 def run_gray(block_size, horizontal):
@@ -264,4 +264,5 @@ def plot(block_size, train_loss, valid_loss):
 
 
 if __name__ == "__main__":
-    run_gray(int(args.block_size), True)
+    for block_size in block_sizes:
+        run(block_size, True)
