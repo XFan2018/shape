@@ -335,17 +335,73 @@ class VGG7PolygonCoordinates(nn.Module):
     def forward(self, x):
         # x.unsqueeze_(1)
         print(x.shape)
-        x = torch.relu(self.conv1d_1(x))
+        x = torch.tanh(self.conv1d_1(x))
         x = self.pool1d_1(x)
-        x = torch.relu(self.conv1d_2(x))
+        x = torch.tanh(self.conv1d_2(x))
         x = self.pool1d_2(x)
-        x = torch.relu(self.conv1d_3(x))
-        x = torch.relu(self.conv1d_4(x))
+        x = torch.tanh(self.conv1d_3(x))
+        x = torch.tanh(self.conv1d_4(x))
         x = self.pool1d_3(x)
         x = x.view((-1, self.input1))
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc2(x))
         x = self.fc3(x)
+        print(x.shape)
+        return x
+
+
+class VGG6PolygonCoordinates(nn.Module):
+    def __init__(self, channel1, channel2, channel3, input1, input2, input3):
+        super(VGG6PolygonCoordinates, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.fc2 = nn.Linear(input2, input3)
+        self.fc3 = nn.Linear(input3, 17)
+
+    def forward(self, x):
+        # x.unsqueeze_(1)
+        print(x.shape)
+        x = torch.tanh(self.conv1d_1(x))
+        x = self.pool1d_1(x)
+        x = torch.tanh(self.conv1d_2(x))
+        x = self.pool1d_2(x)
+        x = torch.tanh(self.conv1d_3(x))
+        x = self.pool1d_3(x)
+        x = x.view((-1, self.input1))
+        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc2(x))
+        x = self.fc3(x)
+        print(x.shape)
+        return x
+
+
+class VGG4PolygonCoordinates(nn.Module):
+    def __init__(self, channel1, channel2, input1, input2):
+        super(VGG4PolygonCoordinates, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.fc2 = nn.Linear(input2, 17)
+
+    def forward(self, x):
+        # x.unsqueeze_(1)
+        print(x.shape)
+        x = torch.tanh(self.conv1d_1(x))
+        x = self.pool1d_1(x)
+        x = torch.tanh(self.conv1d_2(x))
+        x = self.pool1d_2(x)
+        x = x.view((-1, self.input1))
+        x = torch.tanh(self.fc1(x))
+        x = self.fc2(x)
         print(x.shape)
         return x
 
@@ -900,8 +956,8 @@ class ConvAE2_2(nn.Module):
             padding = 2
         else:
             padding = 0
-        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel2,   #16
-                                                     out_channels=channel1,  #8
+        self.transpose_conv1d_1 = nn.ConvTranspose1d(in_channels=channel2,  # 16
+                                                     out_channels=channel1,  # 8
                                                      stride=2,
                                                      kernel_size=5,
                                                      padding=4,
@@ -909,8 +965,8 @@ class ConvAE2_2(nn.Module):
                                                      dilation=1,
                                                      padding_mode="zeros")
         # (channel:8, 16) -> (channel:2, 32)
-        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel1,   #8
-                                                     out_channels=channel0,  #2
+        self.transpose_conv1d_2 = nn.ConvTranspose1d(in_channels=channel1,  # 8
+                                                     out_channels=channel0,  # 2
                                                      stride=2,
                                                      kernel_size=5,
                                                      padding=4,

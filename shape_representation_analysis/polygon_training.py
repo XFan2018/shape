@@ -1,27 +1,34 @@
+import sys
+import os
+
+print(sys.path)
+sys.path.append(os.path.split(sys.path[0])[0])
 import argparse
 from PIL import Image
-from sparse_coding import im2poly
+from shape_representation_analysis.sparse_coding import im2poly
 import matplotlib.pyplot as plt
-from Animal_dataset import AnimalDataset
-from Hemera_dataset import HemeraDataset
-from PolygonAEHemeraDataset import PolygonAEHemeraDataset, TurningAngleAEHemeraDataset, FourierDescriptorAEHemeraDataset
-from PolygonAEAnimalDataset import PolygonAEAnimalDataset, TurningAngleAEAnimalDataset
+from shape_representation_analysis.Animal_dataset import AnimalDataset
+from shape_representation_analysis.Hemera_dataset import HemeraDataset
+from shape_representation_analysis.PolygonAEHemeraDataset import PolygonAEHemeraDataset, TurningAngleAEHemeraDataset, \
+    FourierDescriptorAEHemeraDataset
+from shape_representation_analysis.PolygonAEAnimalDataset import PolygonAEAnimalDataset, TurningAngleAEAnimalDataset
 from torchvision.datasets.folder import make_dataset, pil_loader
 import torchvision
 from sparse_coding import *
-from image_to_polygon import TurningAngleTransform, PolygonTransform, Angle2VecTransform, RandomRotatePoints, \
-    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform, \
+from shape_representation_analysis.shape_transforms import TurningAngleTransform, PolygonTransform, Angle2VecTransform, \
     RandomRotatePoints, \
-    RandomFlipPoints
+    FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform, \
+    RandomRotatePoints, RandomFlipPoints, RandomTranslation, IndexRotate
 import matplotlib.pyplot as plt
 from torchvision import transforms
-from neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, RNN, VGG11PolygonCoordinates, \
+from shape_representation_analysis.neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, \
+    RNN, VGG11PolygonCoordinates, \
     VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, AE2, \
-    ConvAE4, ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2, CNN2
-from pytorchtools import EarlyStopping
+    ConvAE4, ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2, CNN2, VGG6PolygonCoordinates, \
+    VGG4PolygonCoordinates
+from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
-import os
 import torch
 
 parser = argparse.ArgumentParser(description="Train a classifier with polygon coordinates")
@@ -606,10 +613,13 @@ def dfs_freeze(model):
 
 def polygon_training():
     # input_nodes, hidden1_nodes, hidden2_nodes, output_nodes = args.node_number.split()
-    rt = RandomRotatePoints(20)
+    rrt = RandomRotatePoints(20)
     hft = RandomFlipPoints(0.5)
-    vft = RandomFlipPoints(0.05, True)
-    transform = torchvision.transforms.Compose([hft, vft, rt])
+    # vft = RandomFlipPoints(0.05, True)
+    irt = IndexRotate()
+    rtt = RandomTranslation(0.01)
+
+    transform = torchvision.transforms.Compose([hft, rrt, irt, rtt])
     # transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
     # dataset = AnimalDataset(args.dataset, args.extension, transforms=transform_train)
     dataset = PolygonAEAnimalDataset(
@@ -628,7 +638,7 @@ def polygon_training():
                                               batch_size=batch_size,
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
-    model = VGG7PolygonCoordinates(8, 16, 32, 128, 128, 64)
+    model = VGG4PolygonCoordinates(8, 16, 128, 64)
     # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
@@ -637,20 +647,19 @@ def polygon_training():
     #    r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE4_es_8_16_32_turning_angle\no_pretrain_conv_ae_turning_angle")
     # model.apply(dfs_freeze)
 
-    if torch.cuda.is_available():
-        model.cuda(torch.device('cuda:' + str(cuda)))
-    print(model)
-
-    # old_state_dict = {}
-    # for key in model.state_dict():
-    #     old_state_dict[key] = model.state_dict()[key].clone()
-
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=1e-2,
                                  betas=(0.9, 0.999),
                                  eps=1e-8,
                                  weight_decay=1e-4)
+
+    if torch.cuda.is_available():
+        model.cuda(torch.device('cuda:' + str(cuda)))
+
+    # old_state_dict = {}
+    # for key in model.state_dict():
+    #     old_state_dict[key] = model.state_dict()[key].clone()
 
     model, train_loss, valid_loss, stop_point = training(model=model,
                                                          dataloader=dataloader,

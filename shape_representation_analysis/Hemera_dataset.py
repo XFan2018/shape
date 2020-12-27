@@ -2,7 +2,7 @@ import os
 from torchvision.datasets.vision import VisionDataset
 from torchvision.datasets.folder import make_dataset, pil_loader
 from PIL import Image
-from image_to_polygon import PolygonTransform
+from shape_transforms import PolygonTransform
 import numpy as np
 import torch
 from torchvision import transforms

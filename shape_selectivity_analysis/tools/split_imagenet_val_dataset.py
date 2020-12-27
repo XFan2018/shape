@@ -14,7 +14,7 @@ def copy_folders(src, dst):
         if d.startswith("."):
             continue
         print(d)
-        os.makedirs(dst + "\\" + d)
+        os.makedirs(os.path.join(dst, d))
 
 
 # support method
@@ -43,12 +43,12 @@ def split_folder(original, testing, ratio):
     for folder in folders_in_original_dataset:
         if folder == ".DS_Store":
             continue
-        files = os.listdir(original + "\\" + folder)
+        files = os.listdir(os.path.join(original, folder))
         k = int(len(files) * ratio)
         testing_files = random.sample(files, k)
         print(k)
         for file in testing_files:
-            os.rename(original + "\\" + folder + "\\" + file, testing + "\\" + folder + "\\" + file)
+            os.rename(os.path.join(original, folder, file), os.path.join(testing, folder, file))
 
 
 def create_subset(original_folder_path, new_folder_path, subset_number):
@@ -57,7 +57,7 @@ def create_subset(original_folder_path, new_folder_path, subset_number):
     for folder in folders_in_original_dataset:
         if folder == ".DS_Store":
             continue
-        files = os.listdir(original_folder_path + "\\" + folder)
+        files = os.listdir(os.path.join(original_folder_path, folder))
         new_files = random.sample(files, subset_number)
         for file in new_files:
             shutil.copy(os.path.join(original_folder_path, folder, file), os.path.join(new_folder_path, folder))

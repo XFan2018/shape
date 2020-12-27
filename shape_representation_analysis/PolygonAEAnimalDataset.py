@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import torchvision
 import numpy as np
-from image_to_polygon import RandomRotatePoints, RandomFlipPoints, IndexRotate
+from shape_representation_analysis.shape_transforms import RandomRotatePoints, RandomFlipPoints, IndexRotate, RandomTranslation
 
 
 class PolygonAEAnimalDataset():
@@ -92,11 +92,12 @@ if __name__ == "__main__":
     # # print(loss)
 
     ############ Random Rotate ############
-    rt = RandomRotatePoints(20)
+    rrt = RandomRotatePoints(20)
     hft = RandomFlipPoints(0.5)
     vft = RandomFlipPoints(0.2, True)
-    ir = IndexRotate()
-    transforms = torchvision.transforms.Compose([hft, vft, rt, ir])
+    irt = IndexRotate()
+    rtt = RandomTranslation(0.001)
+    transforms = torchvision.transforms.Compose([hft, rrt, irt, rtt])
     dataset = PolygonAEAnimalDataset(r"D:\projects\shape\shape_representation_analysis\polygon_animal_dataset.csv",
                                      r"D:\projects\shape\shape_representation_analysis\polygon_animal_dataset_label.csv",
                                      transforms,
