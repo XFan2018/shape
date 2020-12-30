@@ -1,1 +1,1 @@
-python test_human_experiment_data.py -bs 8 -ltsp log_human_test_checkerboard -m log_model_early_stop_checkerboard_horizontal_8
+python test_human_experiment_data.py -bs 7 -ltsp log_human_test_checkerboard_new -m log_model_imagenet_pretrained_vgg16

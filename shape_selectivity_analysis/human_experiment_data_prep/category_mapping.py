@@ -135,20 +135,20 @@ mapping_dict = {
 
 index_mapping_dict = {
     0: bear_index,
-    1: bicycle_index,
+    1: bird_index,
     2: boat_index,
     3: bottle_index,
-    4: car_index,
-    5: cat_index,
-    6: clock_index,
-    7: keyboard_index
+    4: cat_index,
+    5: chair_index,
+    6: dog_index,
+    7: truck_index
 }
 
 all8_cate_index = bear_index + \
-               bicycle_index + \
+               bird_index + \
                boat_index + \
                bottle_index + \
-               car_index + \
                cat_index + \
-               clock_index + \
-               keyboard_index
+               chair_index + \
+               dog_index + \
+               truck_index

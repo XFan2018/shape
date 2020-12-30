@@ -25,7 +25,7 @@ from shape_representation_analysis.neural_network import TurningAngleNet, Net, V
     RNN, VGG11PolygonCoordinates, \
     VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, AE2, \
     ConvAE4, ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2, CNN2, VGG6PolygonCoordinates, \
-    VGG4PolygonCoordinates
+    VGG4PolygonCoordinates, VGG6PolygonCoordinates_dropout
 from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -638,8 +638,8 @@ def polygon_training():
                                               batch_size=batch_size,
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
-    model = VGG4PolygonCoordinates(8, 16, 128, 64)
-    # model = VGG16PolygonCoordinates(32, 64, 128, 256, 256, 64, 17)
+    # model = VGG4PolygonCoordinates(8, 16, 128, 64)
+    model = VGG6PolygonCoordinates_dropout(8, 16, 32, 128, 128, 64)
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
     device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
@@ -669,7 +669,7 @@ def polygon_training():
                                                          num_epochs=int(args.epoch_number),
                                                          device=device,
                                                          log_training_path=args.log_training_path,
-                                                         patience=1000)
+                                                         patience=5000)
 
     # new_state_dict = {}
     # for key in model.state_dict():
@@ -1677,6 +1677,7 @@ if __name__ == "__main__":
     model, train_loss, valid_loss, stop_point = polygon_training()
     plot(train_loss, valid_loss, stop_point)
     polygon_testing(model, stop_point=stop_point)
+
 
     ################# evaluate convolutional auto-encoder #####################
     # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")

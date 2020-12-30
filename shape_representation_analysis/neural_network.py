@@ -381,6 +381,39 @@ class VGG6PolygonCoordinates(nn.Module):
         return x
 
 
+class VGG6PolygonCoordinates_dropout(nn.Module):
+    def __init__(self, channel1, channel2, channel3, input1, input2, input3):
+        super(VGG6PolygonCoordinates_dropout, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.dropout1 = nn.Dropout(0.2)
+        self.fc2 = nn.Linear(input2, input3)
+        self.dropout2 = nn.Dropout(0.2)
+        self.fc3 = nn.Linear(input3, 17)
+
+    def forward(self, x):
+        # x.unsqueeze_(1)
+        print(x.shape)
+        x = torch.tanh(self.conv1d_1(x))
+        x = self.pool1d_1(x)
+        x = torch.tanh(self.conv1d_2(x))
+        x = self.pool1d_2(x)
+        x = torch.tanh(self.conv1d_3(x))
+        x = self.pool1d_3(x)
+        x = x.view((-1, self.input1))
+        x = torch.tanh(self.fc1(self.dropout1(x)))
+        x = torch.tanh(self.fc2(self.dropout2(x)))
+        x = self.fc3(x)
+        print(x.shape)
+        return x
+
+
 class VGG4PolygonCoordinates(nn.Module):
     def __init__(self, channel1, channel2, input1, input2):
         super(VGG4PolygonCoordinates, self).__init__()
