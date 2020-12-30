@@ -2,6 +2,7 @@ import torch
 import torchvision
 import sys
 import os
+
 sys.path.append(os.path.split(sys.path[0])[0])
 sys.path.append(os.path.split(sys.path[-1])[0])
 print(sys.path)
@@ -57,6 +58,7 @@ def run_train_finetune(block_size, horizontal):
     optimizer = torch.optim.SGD(model.parameters(),
                                 lr=config_train.lr)
 
+    # random block_size if block_size is 0
     model_trained, avg_train_losses, avg_valid_losses, stop_point = train_model(model=model,
                                                                                 trainloaders1=train_dataloader,
                                                                                 trainloaders2=train_dataloader,
@@ -269,5 +271,4 @@ def plot(block_size, train_loss, valid_loss):
 
 
 if __name__ == "__main__":
-    for block_size in block_sizes:
-        run(block_size, True)
+    run(0, True)

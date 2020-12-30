@@ -2,8 +2,9 @@ import time
 import torch
 import numpy as np
 import os
-from scramble_checkerboard import checker_board_batch
+from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checker_board_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
+import random
 import torchvision.transforms as transforms
 
 """
@@ -22,6 +23,11 @@ def set_bn_eval(module):
 def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders2, criterion, optimizer, num_epochs, device, batch_size, model_path,
                 log_path, block_size, fc_only, patience, horizontal):
     since = time.time()
+    # block_size == 0 -> user random block sizes
+    block_sizes = [7, 14, 28, 56]
+    random_block_size = False
+    if block_size == 0:
+        random_block_size = True
 
     # to track the training loss as the model trains
     train_losses = []
@@ -115,6 +121,8 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
             # inputs1 = np.array(inputs1)
             # inputs2 = np.array(inputs2)
             print(type(inputs1[0]))
+            if random_block_size:
+                block_size = random.choice(block_sizes)
             inputs = checker_board_batch(inputs1, inputs2, block_size, horizontal)
             inputs = inputs.to(device)
 
@@ -194,6 +202,8 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
         for data_index, ((inputs1, labels1), (inputs2, labels2)) in enumerate(zip(validloaders1, validloaders2)):
             labels1 = labels1.to(device)
             labels2 = labels2.to(device)
+            if random_block_size:
+                block_size = random.choice(block_sizes)
             inputs = checker_board_batch(inputs1, inputs2, block_size, horizontal)
             inputs = inputs.to(device)
             with torch.set_grad_enabled(False):
