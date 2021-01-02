@@ -45,7 +45,7 @@ parser.add_argument("-ltrp", "--log_training_path", help="path to the log of tra
 parser.add_argument("-ltsp", "--log_testing_path", help="path to the log of testing")
 args = parser.parse_args()
 
-batch_size = 16
+batch_size = 128
 cuda = 0
 
 

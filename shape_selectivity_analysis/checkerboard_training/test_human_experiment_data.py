@@ -96,7 +96,7 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
 def run_human_test_checkerboard():
     ################### prepare parameters ########################
     # model = torchvision.models.vgg16_bn(pretrained=True)
-    model = torch.load(r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_28\model.pkl18")
+    model = torch.load(r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
     dataset_path = os.path.join(JUMBLED_DATASET_HUMAN, "blocksize" + str(args.block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),

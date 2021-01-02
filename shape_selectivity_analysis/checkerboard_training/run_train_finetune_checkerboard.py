@@ -92,7 +92,7 @@ def run_train_finetune(block_size, horizontal):
     return model_trained, avg_train_losses, avg_valid_losses, stop_point
 
 
-def run_train_finetune_gray(block_size, horizontal):
+def run_train_finetune_gray(block_size, intact):
     config_train = ConfigTrainImagenet(args.dataset, int(args.epochs), float(args.learning_rate), shuffle=True)
     config_valid = ConfigTrainImagenet(args.validset, int(args.epochs), float(args.learning_rate), shuffle=False)
     train_dataloader = config_train.loader
@@ -126,7 +126,7 @@ def run_train_finetune_gray(block_size, horizontal):
                                                                                      block_size=block_size,
                                                                                      fc_only=bool(args.fc_only),
                                                                                      patience=20,
-                                                                                     horizontal=horizontal)
+                                                                                     intact=intact)
 
     if bool(args.fc_only):
         new_state_dict = {}
@@ -237,17 +237,17 @@ def run(block_size, horizontal):
     # run_test_gray(model_trained, block_size, 0, False, horizontal)
 
 
-def run_gray(block_size, horizontal):
-    model_trained, train_loss, valid_loss, stop_point = run_train_finetune_gray(block_size, horizontal)
+def run_gray(block_size, intact):
+    model_trained, train_loss, valid_loss, stop_point = run_train_finetune_gray(block_size, intact)
     plot(block_size, train_loss, valid_loss)
-    run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
-    run_test_intact(model_trained, block_size, stop_point)
-    run_test_scrambled(model_trained, block_size, stop_point, horizontal)
-    run_test_gray(model_trained, block_size, stop_point, True, horizontal)
-    run_test_gray(model_trained, block_size, stop_point, False, horizontal)
-    model_trained = torchvision.models.vgg16_bn(True)
-    run_test_gray(model_trained, block_size, 0, True, horizontal)
-    run_test_gray(model_trained, block_size, 0, False, horizontal)
+    # run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
+    # run_test_intact(model_trained, block_size, stop_point)
+    # run_test_scrambled(model_trained, block_size, stop_point, horizontal)
+    # run_test_gray(model_trained, block_size, stop_point, True, horizontal)
+    # run_test_gray(model_trained, block_size, stop_point, False, horizontal)
+    # model_trained = torchvision.models.vgg16_bn(True)
+    # run_test_gray(model_trained, block_size, 0, True, horizontal)
+    # run_test_gray(model_trained, block_size, 0, False, horizontal)
 
 
 def plot(block_size, train_loss, valid_loss):
@@ -271,4 +271,4 @@ def plot(block_size, train_loss, valid_loss):
 
 
 if __name__ == "__main__":
-    run(0, True)
+    run_gray(0, True)

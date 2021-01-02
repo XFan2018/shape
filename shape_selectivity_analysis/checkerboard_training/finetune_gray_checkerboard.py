@@ -1,3 +1,4 @@
+import random
 import time
 import torch
 import numpy as np
@@ -22,6 +23,11 @@ def set_bn_eval(module):
 def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, num_epochs, device, batch_size, model_path,
                 log_path, block_size, fc_only, patience, intact):
     since = time.time()
+    # block_size == 0 -> user random block sizes
+    block_sizes = [7, 14, 28, 56]
+    random_block_size = False
+    if block_size == 0:
+        random_block_size = True
 
     # to track the training loss as the model trains
     train_losses = []
@@ -104,6 +110,8 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
             # inputs1 = np.array(inputs1)
             # inputs2 = np.array(inputs2)
             print(type(inputs1[0]))
+            if random_block_size:
+                block_size = random.choice(block_sizes)
             if intact:
                 inputs = checker_board_intact_gray_batch(inputs1, block_size)
             else:
@@ -173,6 +181,9 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
         model.eval()
         for data_index, (inputs1, labels1) in enumerate(validloaders1):
             labels1 = labels1.to(device)
+            if random_block_size:
+                block_size = random.choice(block_sizes)
+
             if intact:
                 inputs = checker_board_intact_gray_batch(inputs1, block_size)
             else:
