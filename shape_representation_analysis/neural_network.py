@@ -1,3 +1,6 @@
+import math
+from functools import partial
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +9,23 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from sparse_coding import im2poly, equal_arclength
 import torch_interpolations
+
+
+def conv_block(in_f, out_f, activation='relu', *args, **kwargs):
+    activations = activation_func(activation)
+
+    return nn.Sequential(
+        nn.Conv2d(in_f, out_f, *args, **kwargs),
+        nn.BatchNorm2d(out_f),
+        activations[activation]
+    )
+
+
+def activation_func(activation):
+    return nn.ModuleDict(
+        {'leaky_relu': nn.LeakyReLU(negative_slope=0.2, inplace=True),
+         'tanh': nn.Tanh()}
+    )[activation]
 
 
 class Net(nn.Module):
@@ -385,30 +405,41 @@ class VGG6PolygonCoordinates_dropout(nn.Module):
     def __init__(self, channel1, channel2, channel3, input1, input2, input3):
         super(VGG6PolygonCoordinates_dropout, self).__init__()
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.conv1d_1_bn = nn.BatchNorm1d(channel1)
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.conv1d_2_bn = nn.BatchNorm1d(channel2)
         self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_3_bn = nn.BatchNorm1d(channel3)
         self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.input1 = input1
         self.fc1 = nn.Linear(input1, input2)
+        self.fc1_bn = nn.BatchNorm1d(input2)
         self.dropout1 = nn.Dropout(0.2)
         self.fc2 = nn.Linear(input2, input3)
+        self.fc2_bn = nn.BatchNorm1d(input3)
         self.dropout2 = nn.Dropout(0.2)
         self.fc3 = nn.Linear(input3, 17)
+        # self.leaky_relu = activation_func("leaky_relu")
 
     def forward(self, x):
         # x.unsqueeze_(1)
         print(x.shape)
-        x = torch.tanh(self.conv1d_1(x))
+        x = torch.tanh(self.conv1d_1_bn(self.conv1d_1(x)))
+        # x = self.leaky_relu(self.conv1d_1_bn(self.conv1d_1(x)))
         x = self.pool1d_1(x)
-        x = torch.tanh(self.conv1d_2(x))
+        x = torch.tanh(self.conv1d_2_bn(self.conv1d_2(x)))
+        # x = self.leaky_relu(self.conv1d_2_bn(self.conv1d_2(x)))
         x = self.pool1d_2(x)
-        x = torch.tanh(self.conv1d_3(x))
+        x = torch.tanh(self.conv1d_3_bn(self.conv1d_3(x)))
+        # x = self.leaky_relu(self.conv1d_3_bn(self.conv1d_3(x)))
         x = self.pool1d_3(x)
         x = x.view((-1, self.input1))
-        x = torch.tanh(self.fc1(self.dropout1(x)))
-        x = torch.tanh(self.fc2(self.dropout2(x)))
+        x = torch.tanh(self.fc1_bn(self.fc1(self.dropout1(x))))
+        # x = self.leaky_relu(self.fc1_bn(self.fc1(self.dropout1(x))))
+        x = torch.tanh(self.fc2_bn(self.fc2(self.dropout2(x))))
+        # x = self.leaky_relu(self.fc2_bn(self.fc2(self.dropout2(x))))
         x = self.fc3(x)
         print(x.shape)
         return x
@@ -418,8 +449,10 @@ class VGG4PolygonCoordinates(nn.Module):
     def __init__(self, channel1, channel2, input1, input2):
         super(VGG4PolygonCoordinates, self).__init__()
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.conv1d_2_bn = nn.BatchNorm1d(channel2)
         self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.input1 = input1
         self.fc1 = nn.Linear(input1, input2)
@@ -434,6 +467,37 @@ class VGG4PolygonCoordinates(nn.Module):
         x = self.pool1d_2(x)
         x = x.view((-1, self.input1))
         x = torch.tanh(self.fc1(x))
+        x = self.fc2(x)
+        print(x.shape)
+        return x
+
+
+class VGG4PolygonCoordinatesSelfAttention(nn.Module):
+    def __init__(self, channel1, channel2, input1, input2, d_model):
+        super(VGG4PolygonCoordinatesSelfAttention, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.conv1d_1_bn = nn.BatchNorm1d(channel1)
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.conv1d_2_bn = nn.BatchNorm1d(channel2)
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.multi_head_attention = MultiHeadAttention(1, d_model)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.dropout1 = nn.Dropout(0.2)
+        self.fc2 = nn.Linear(input2, 17)
+
+    def forward(self, x):
+        # x.unsqueeze_(1)
+        print(x.shape)
+        x = torch.tanh(self.conv1d_1_bn(self.conv1d_1(x)))
+        x = self.pool1d_1(x)
+        x = torch.tanh(self.conv1d_2_bn(self.conv1d_2(x)))
+        x = self.pool1d_2(x)
+        x = self.multi_head_attention(x, x, x)
+        print("attention output: ", x.shape)
+        x = x.view((-1, self.input1))
+        x = torch.tanh(self.fc1(self.dropout1(x)))
         x = self.fc2(x)
         print(x.shape)
         return x
@@ -1186,6 +1250,175 @@ class ConvAEEqualArcLength(nn.Module):
         return torch.stack(result)
 
 
+# input = Batch_size * seq_len * d_model.
+class MultiHeadAttention(nn.Module):
+    def __init__(self, heads, d_model, dropout=0.1):
+        super().__init__()
+
+        self.d_model = d_model
+        self.d_k = d_model // heads
+        self.h = heads
+
+        self.q_linear = nn.Linear(d_model, d_model)
+        self.v_linear = nn.Linear(d_model, d_model)
+        self.k_linear = nn.Linear(d_model, d_model)
+        self.dropout = nn.Dropout(dropout)
+        self.out = nn.Linear(d_model, d_model)
+
+    def attention(self, q, k, v, d_k, mask=None, dropout=None):
+
+        scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
+
+        if mask is not None:
+            mask = mask.unsqueeze(1)
+            scores = scores.masked_fill(mask == 0, -1e9)
+
+        scores = F.softmax(scores, dim=-1)
+
+        if dropout is not None:
+            scores = dropout(scores)
+
+        output = torch.matmul(scores, v)
+        return output
+
+    def forward(self, q, k, v, mask=None):
+        bs = q.size(0)
+
+        # perform linear operation and split into h heads
+
+        k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
+        q = self.q_linear(q).view(bs, -1, self.h, self.d_k)
+        v = self.v_linear(v).view(bs, -1, self.h, self.d_k)
+
+        # transpose to get dimensions bs * h * sl * d_model
+
+        k = k.transpose(1, 2)
+        q = q.transpose(1, 2)
+        v = v.transpose(1, 2)
+        # calculate attention using function we will define next
+        scores = self.attention(q, k, v, self.d_k, mask, self.dropout)
+
+        # concatenate heads and put through final linear layer
+        concat = scores.transpose(1, 2).contiguous() \
+            .view(bs, -1, self.d_model)
+
+        output = self.out(concat)
+
+        return output
+
+
+class PreActBlock(nn.Module):
+    '''Pre-activation version of the BasicBlock.'''
+    expansion = 1
+
+    def __init__(self, in_planes, planes, stride=1):
+        super(PreActBlock, self).__init__()
+        self.bn1 = nn.BatchNorm1d(in_planes)
+        self.conv1 = nn.Conv1d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm1d(planes)
+        self.conv2 = nn.Conv1d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv1d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False)
+            )
+
+    def forward(self, x):
+        out = F.relu(self.bn1(x))
+        # if number of planes changed, use kernel size = 1 convolution to change the shortcut planes number
+        shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
+        out = self.conv1(out)
+        out = self.conv2(F.relu(self.bn2(out)))
+        out += shortcut
+        return out
+
+
+class PreActBottleneck(nn.Module):
+    '''Pre-activation version of the original Bottleneck module.'''
+    expansion = 4
+
+    def __init__(self, in_planes, planes, stride=1):
+        super(PreActBottleneck, self).__init__()
+        self.bn1 = nn.BatchNorm1d(in_planes)
+        self.conv1 = nn.Conv1d(in_planes, planes, kernel_size=1, bias=False)
+        self.bn2 = nn.BatchNorm1d(planes)
+        self.conv2 = nn.Conv1d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn3 = nn.BatchNorm1d(planes)
+        self.conv3 = nn.Conv1d(planes, self.expansion * planes, kernel_size=1, bias=False)
+
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv1d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False)
+            )
+
+    def forward(self, x):
+        out = F.relu(self.bn1(x))
+        shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
+        out = self.conv1(out)
+        out = self.conv2(F.relu(self.bn2(out)))
+        out = self.conv3(F.relu(self.bn3(out)))
+        out += shortcut
+        return out
+
+
+class PreActResNet(nn.Module):
+    def __init__(self, block, num_blocks, num_classes=17):
+        super(PreActResNet, self).__init__()
+        self.in_planes = 8
+
+        self.conv1 = nn.Conv1d(2, 8, kernel_size=3, stride=1, padding=1, bias=False)
+        self.layer1 = self._make_layer(block, 8, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 16, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 32, num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(block, 64, num_blocks[3], stride=2)
+        self.linear = nn.Linear(64 * block.expansion, num_classes)
+
+    def _make_layer(self, block, planes, num_blocks, stride):
+        strides = [stride] + [1] * (num_blocks - 1)
+        layers = []
+        for stride in strides:
+            layers.append(block(self.in_planes, planes, stride))
+            self.in_planes = planes * block.expansion
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool1d(out, 4)
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        return out
+
+
+def PreActResNet18():
+    return PreActResNet(PreActBlock, [2, 2, 2, 2])
+
+
+def PreActResNet34():
+    return PreActResNet(PreActBlock, [3, 4, 6, 3])
+
+
+def PreActResNet50():
+    return PreActResNet(PreActBottleneck, [3, 4, 6, 3])
+
+
+def PreActResNet101():
+    return PreActResNet(PreActBottleneck, [3, 4, 23, 3])
+
+
+def PreActResNet152():
+    return PreActResNet(PreActBottleneck, [3, 8, 36, 3])
+
+
+def test():
+    net = PreActResNet18()
+    y = net((torch.randn(1,2,32)))
+    print(y.size())
+
+
 if __name__ == "__main__":
     # input = torch.ones(1, 1, 4)
     # t_conv = nn.ConvTranspose1d(in_channels=1, out_channels=1, stride=1, kernel_size=3, padding=0, output_padding=0,
@@ -1199,19 +1432,22 @@ if __name__ == "__main__":
     # pad_polygon = ae.circular_padding(polygon, 5)
     # print(pad_polygon)
 
-    im = Image.open("D:\\projects\\shape_dataset\\animal_dataset\\bird\\bird1.tif")
-    img = np.array(im)
-    polygon = im2poly(img, 32)
-    polygon = polygon.transpose()
-    polygon = polygon[np.newaxis, :]
-    print(polygon.shape)
-    polygon = torch.from_numpy(polygon)
-    ae = ConvAEEqualArcLength(8, 16, 32, True, 32)
-    result = ae.equal_arc_length(polygon, 32)
-    result = result.view(2, 32)
-    print(result.shape)
+    # im = Image.open("D:\\projects\\shape_dataset\\animal_dataset\\bird\\bird1.tif")
+    # img = np.array(im)
+    # polygon = im2poly(img, 32)
+    # polygon = polygon.transpose()
+    # polygon = polygon[np.newaxis, :]
+    # print(polygon.shape)
+    # polygon = torch.from_numpy(polygon)
+    # ae = ConvAEEqualArcLength(8, 16, 32, True, 32)
+    # result = ae.equal_arc_length(polygon, 32)
+    # result = result.view(2, 32)
+    # print(result.shape)
+    #
+    # x = result[0, :]
+    # y = result[1, :]
+    # plt.scatter(x.numpy(), y.numpy())
+    # plt.show()
 
-    x = result[0, :]
-    y = result[1, :]
-    plt.scatter(x.numpy(), y.numpy())
-    plt.show()
+    test()
+

@@ -25,7 +25,7 @@ from shape_representation_analysis.neural_network import TurningAngleNet, Net, V
     RNN, VGG11PolygonCoordinates, \
     VGG9PolygonCoordinates, VGG7PolygonCoordinates, VGG16PolygonCoordinates, LSTM, polygon_sets_transform, AE, AE2, \
     ConvAE4, ConvAE2, ConvAE3, ConvAEEqualArcLength, ConvAE1_1, ConvAE2_2, CNN2, VGG6PolygonCoordinates, \
-    VGG4PolygonCoordinates, VGG6PolygonCoordinates_dropout
+    VGG4PolygonCoordinates, VGG6PolygonCoordinates_dropout, VGG4PolygonCoordinatesSelfAttention, PreActResNet18
 from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
@@ -45,7 +45,7 @@ parser.add_argument("-ltrp", "--log_training_path", help="path to the log of tra
 parser.add_argument("-ltsp", "--log_testing_path", help="path to the log of testing")
 args = parser.parse_args()
 
-batch_size = 128
+batch_size = 64
 cuda = 0
 
 
@@ -418,7 +418,10 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 
 def training(model, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
-    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
+    # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
+    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
+    # lambda1 = lambda epoch: 1 - 0.000099 * epoch if 1 - 0.000099 * epoch > 0.01 else 0.01
+    # lambda1 = lambda epoch: 0.0000000099 * (epoch-10000) ** 2 + 0.01 if epoch > 10000 else 0.01
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
     model_path = args.model + architecture
     stop_point = 0
@@ -639,7 +642,9 @@ def polygon_training():
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     # model = VGG4PolygonCoordinates(8, 16, 128, 64)
-    model = VGG6PolygonCoordinates_dropout(8, 16, 32, 128, 128, 64)
+    # model = VGG6PolygonCoordinates_dropout(8, 16, 32, 128, 128, 64)
+    # model = VGG4PolygonCoordinatesSelfAttention(8, 16, 128, 64, 8)
+    model = PreActResNet18()
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
     device = torch.device("cuda:" + str(cuda) if torch.cuda.is_available() else "cpu")
@@ -669,7 +674,7 @@ def polygon_training():
                                                          num_epochs=int(args.epoch_number),
                                                          device=device,
                                                          log_training_path=args.log_training_path,
-                                                         patience=5000)
+                                                         patience=100)
 
     # new_state_dict = {}
     # for key in model.state_dict():
