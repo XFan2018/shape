@@ -6,35 +6,33 @@ import torchvision.transforms as transforms
 import numpy as np
 import random
 
-# im1 = Image.open(
-#     "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\5451110_99f37d8942.jpg")
-# im2 = Image.open(
-#     "D:\\projects\\summerProject2020\\project1\\imagenet1000-20\\imagenet_images\\absinth\\357588977_a8135675c7.jpg")
+im1 = Image.open(
+    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00007197.JPEG")
+im2 = Image.open(
+    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040342.JPEG")
 
 transform = torchvision.transforms.Compose(
     [torchvision.transforms.Resize(256),
      torchvision.transforms.CenterCrop(224)])
 
 # resize image to 224
-# im1 = transform(im1)
-# im2 = transform(im2)
-# im1 = np.array(im1)
-# im2 = np.array(im2)
+im1 = transform(im1)
+im2 = transform(im2)
+im1 = np.array(im1)
+im2 = np.array(im2)
 
 
-def checker_board(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=False):
+def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=False, use_lattice=False):
     """
     :param im1: ground truth image （numpy）
     :param im2: adversarial attack image (numpy)
     :param size: checkerboard block sizes
     :param horizontal_only: scrambled horizontally
-    :return: checker board image that combines ground truth image and scrambled adversarial attack image (PIL)
+    :return: checkerboard image that combines ground truth image and scrambled adversarial attack image (PIL)
     """
     #  scramble adversarial image
     transform = transforms.ToPILImage()
     im1 = transform(im1)
-    im2 = transform(im2)
-    im2 = np.array(im2)
     im2 = np.transpose(im2, (2, 0, 1))
     if horizontal_only:
         im2 = scramble_image_row(im2, size, size)
@@ -58,25 +56,54 @@ def checker_board(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=F
         for j in range(im2.size[1]):
             pixel_map2_new[i, j] = pixel_map2[i, j]
 
-    # make checker board
+    # make checkerboard
     mod = im1.size[0] % size
     if mod != 0:
         raise Exception("cannot make checker board with size: " + str(size))
     number = im1.size[0] // size
     rand = random.random()
     # print(rand)
-    for i in range(0, number):  # row of the checker board
-        for j in range(0, number, 2):  # col of the checker board to be replace by the second image
+    lattice = 1
+    for i in range(0, number):  # row of the checkerboard
+        for j in range(0, number, 2):  # col of the checkerboard to be replace by the second image
             if i % 2 == 0:
+                k = j
                 j += 1
+            else:
+                k = j + 1
+            if use_lattice:
+                if k != number:
+                    for m in range(i * size, (i + 1) * size):
+                        print(k)
+                        for n in range(k * size, (k + 1) * size):
+                            is_boundary = (m < (i * size) + lattice or m > (i + 1) * size - 1 - lattice or n < (
+                                        k * size) + lattice or n > (k + 1) * size -1 - lattice)
+                            if rand >= 0.5:
+                                if is_boundary:
+                                    pixel_map1_new[m, n] = (0, 0, 0)
+                            else:
+                                if is_boundary:
+                                    pixel_map2_new[m, n] = (0, 0, 0)
             if j == number:
                 continue
             for m in range(i * size, (i + 1) * size):
                 for n in range(j * size, (j + 1) * size):
-                    if rand >= 0.5:
-                        pixel_map1_new[m, n] = pixel_map2_new[m, n]
+                    if use_lattice:
+                        is_boundary = (m < (i * size) + lattice or m > (i + 1) * size -1 - lattice or n < (j * size) + lattice or n > (j + 1) * size -1 - lattice)
                     else:
-                        pixel_map2_new[m, n] = pixel_map1_new[m, n]
+                        is_boundary = False
+                    if rand >= 0.5:
+                        if is_boundary:
+                            pixel_map1_new[m, n] = (0, 0, 0)
+                        else:
+                            pixel_map1_new[m, n] = pixel_map2_new[m, n]
+                    else:
+                        if is_boundary:
+                            pixel_map2_new[m, n] = (0, 0, 0)
+                        else:
+                            pixel_map2_new[m, n] = pixel_map1_new[m, n]
+
+
 
     if rand >= 0.5:
         return im1_new
@@ -84,7 +111,7 @@ def checker_board(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=F
         return im2_new
 
 
-def checker_board_intact_gray(im1, size):
+def checkerboard_intact_gray(im1, size):
     """
     :param im1: intadt image (numpy)
     :param size: checker board block sizes
@@ -126,7 +153,7 @@ def checker_board_intact_gray(im1, size):
     return im1_new
 
 
-def checker_board_scrambled_gray(im2, size, horizontal_only=False):
+def checkerboard_scrambled_gray(im2, size, horizontal_only=False):
     """
     :param im2: scrambled image (numpy)
     :param size: checker board block sizes
@@ -178,7 +205,7 @@ def checker_board_scrambled_gray(im2, size, horizontal_only=False):
     return im2_new
 
 
-def checker_board_batch(im1_batch, im2_batch, block_size, horizontal_only=False):
+def checkerboard_batch(im1_batch, im2_batch, block_size, horizontal_only=False):
     """
     :param im1_batch: a batch of numpy images (ground truth)
     :param im2_batch: a batch of numpy images (adversary)
@@ -191,7 +218,7 @@ def checker_board_batch(im1_batch, im2_batch, block_size, horizontal_only=False)
     result = []
     length = len(im1_batch)
     for i in range(length):
-        cb = checker_board(im1_batch[i], im2_batch[i], block_size, horizontal_only)
+        cb = checkerboard(im1_batch[i], im2_batch[i], block_size, horizontal_only)
         # cb.show()
         cb = np.array(cb)
         cb = transform(cb)
@@ -201,7 +228,7 @@ def checker_board_batch(im1_batch, im2_batch, block_size, horizontal_only=False)
     return result
 
 
-def checker_board_intact_gray_batch(im1_batch, block_size):
+def checkerboard_intact_gray_batch(im1_batch, block_size):
     """
     :param im1_batch: a batch of numpy images (ground truth)
     :param block_size: see above
@@ -212,7 +239,7 @@ def checker_board_intact_gray_batch(im1_batch, block_size):
     result = []
     length = len(im1_batch)
     for i in range(length):
-        cb = checker_board_intact_gray(im1_batch[i], block_size)
+        cb = checkerboard_intact_gray(im1_batch[i], block_size)
         # cb.show()
         cb = np.array(cb)
         cb = transform(cb)
@@ -222,7 +249,7 @@ def checker_board_intact_gray_batch(im1_batch, block_size):
     return result
 
 
-def checker_board_scrambled_gray_batch(im2_batch, block_size, horizontal_only=False):
+def checkerboard_scrambled_gray_batch(im2_batch, block_size, horizontal_only=False):
     """
     :param im2_batch: a batch of numpy images (scrambled)
     :param block_size: see above
@@ -234,7 +261,7 @@ def checker_board_scrambled_gray_batch(im2_batch, block_size, horizontal_only=Fa
     result = []
     length = len(im2_batch)
     for i in range(length):
-        cb = checker_board_scrambled_gray(im2_batch[i], block_size, horizontal_only)
+        cb = checkerboard_scrambled_gray(im2_batch[i], block_size, horizontal_only)
         # cb.show()
         cb = np.array(cb)
         cb = transform(cb)
@@ -245,7 +272,7 @@ def checker_board_scrambled_gray_batch(im2_batch, block_size, horizontal_only=Fa
 
 
 if __name__ == "__main__":
-    im1_new = checker_board(im1, im2, 32, True)
+    im1_new = checkerboard(im1, im2, 56, True, True)
     # transform1 = transforms.ToTensor()
     # transform2 = transforms.ToPILImage()
     # im1 = transform1(im1)

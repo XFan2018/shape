@@ -2,7 +2,7 @@ import time
 import torch
 import numpy as np
 import os
-from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checker_board_batch
+from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
 import random
 import torchvision.transforms as transforms
@@ -123,7 +123,7 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
             print(type(inputs1[0]))
             if random_block_size:
                 block_size = random.choice(block_sizes)
-            inputs = checker_board_batch(inputs1, inputs2, block_size, horizontal)
+            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal)
             inputs = inputs.to(device)
 
             print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
@@ -204,7 +204,7 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
             labels2 = labels2.to(device)
             if random_block_size:
                 block_size = random.choice(block_sizes)
-            inputs = checker_board_batch(inputs1, inputs2, block_size, horizontal)
+            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal)
             inputs = inputs.to(device)
             with torch.set_grad_enabled(False):
                 output = model(inputs)

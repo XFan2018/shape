@@ -3,7 +3,7 @@ import time
 import torch
 import numpy as np
 import os
-from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checker_board_batch, checker_board_scrambled_gray_batch, checker_board_intact_gray_batch
+from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_batch, checkerboard_scrambled_gray_batch, checkerboard_intact_gray_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
 import torchvision.transforms as transforms
 
@@ -113,9 +113,9 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
             if random_block_size:
                 block_size = random.choice(block_sizes)
             if intact:
-                inputs = checker_board_intact_gray_batch(inputs1, block_size)
+                inputs = checkerboard_intact_gray_batch(inputs1, block_size)
             else:
-                inputs = checker_board_scrambled_gray_batch(inputs1, block_size)
+                inputs = checkerboard_scrambled_gray_batch(inputs1, block_size)
             inputs = inputs.to(device)
 
             print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
@@ -185,9 +185,9 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
                 block_size = random.choice(block_sizes)
 
             if intact:
-                inputs = checker_board_intact_gray_batch(inputs1, block_size)
+                inputs = checkerboard_intact_gray_batch(inputs1, block_size)
             else:
-                inputs = checker_board_scrambled_gray_batch(inputs1, block_size)
+                inputs = checkerboard_scrambled_gray_batch(inputs1, block_size)
             inputs = inputs.to(device)
             with torch.set_grad_enabled(False):
                 output = model(inputs)

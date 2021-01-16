@@ -674,7 +674,7 @@ def polygon_training():
                                                          num_epochs=int(args.epoch_number),
                                                          device=device,
                                                          log_training_path=args.log_training_path,
-                                                         patience=100)
+                                                         patience=10000)
 
     # new_state_dict = {}
     # for key in model.state_dict():

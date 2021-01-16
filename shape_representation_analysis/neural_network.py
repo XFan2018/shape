@@ -1311,12 +1311,15 @@ class PreActBlock(nn.Module):
     '''Pre-activation version of the BasicBlock.'''
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1, activation="tanh"):
         super(PreActBlock, self).__init__()
+        self.dropout1 = nn.Dropout(0.2)
         self.bn1 = nn.BatchNorm1d(in_planes)
         self.conv1 = nn.Conv1d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.dropout2 = nn.Dropout(0.2)
         self.bn2 = nn.BatchNorm1d(planes)
         self.conv2 = nn.Conv1d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+        self.activation_func = activation_func(activation)
 
         if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
@@ -1324,11 +1327,11 @@ class PreActBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(x))
+        out = self.activation_func(self.bn1(x))
         # if number of planes changed, use kernel size = 1 convolution to change the shortcut planes number
         shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
-        out = self.conv1(out)
-        out = self.conv2(F.relu(self.bn2(out)))
+        out = self.conv1(self.dropout1(out))
+        out = self.conv2(self.activation_func(self.bn2(self.dropout2(out))))
         out += shortcut
         return out
 
@@ -1337,26 +1340,28 @@ class PreActBottleneck(nn.Module):
     '''Pre-activation version of the original Bottleneck module.'''
     expansion = 4
 
-    def __init__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1, activation="leaky_relu"):
         super(PreActBottleneck, self).__init__()
         self.bn1 = nn.BatchNorm1d(in_planes)
         self.conv1 = nn.Conv1d(in_planes, planes, kernel_size=1, bias=False)
+        self.dropout2 = nn.Dropout(0.2)
         self.bn2 = nn.BatchNorm1d(planes)
         self.conv2 = nn.Conv1d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.dropout3 = nn.Dropout(0.2)
         self.bn3 = nn.BatchNorm1d(planes)
         self.conv3 = nn.Conv1d(planes, self.expansion * planes, kernel_size=1, bias=False)
-
+        self.activation_func = activation_func(activation)
         if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
                 nn.Conv1d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False)
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(x))
+        out = self.activation_func(self.bn1(x))
         shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
         out = self.conv1(out)
-        out = self.conv2(F.relu(self.bn2(out)))
-        out = self.conv3(F.relu(self.bn3(out)))
+        out = self.conv2(self.activation_func(self.bn2(self.dropout2(out))))
+        out = self.conv3(self.activation_func(self.bn3(self.dropout3(out))))
         out += shortcut
         return out
 
@@ -1415,7 +1420,7 @@ def PreActResNet152():
 
 def test():
     net = PreActResNet18()
-    y = net((torch.randn(1,2,32)))
+    y = net((torch.randn(1, 2, 32)))
     print(y.size())
 
 
@@ -1450,4 +1455,3 @@ if __name__ == "__main__":
     # plt.show()
 
     test()
-
