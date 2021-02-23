@@ -60,7 +60,7 @@ for x in block_sizes:
             cate = cate_dict[label_intact]
             cate_jumbled = cate_dict[label_jumbled]
             print(cate)
-            img = checkerboard(data_intact, data_jumbled, x, True)
+            img = checkerboard(data_intact, data_jumbled, x, True, True)
             img_intact = Image.fromarray(data_intact)
             temp = np.transpose(data_intact, (2, 0, 1))
             temp = scramble_image_row(temp, x, x)
@@ -68,10 +68,10 @@ for x in block_sizes:
             img_jumbled = Image.fromarray(temp)
             img_gray = checkerboard_intact_gray(data_intact, x)
 
-            img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.jpeg"))
-            img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            # img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.jpeg"))
+            # img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            # img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
             i = (i + 1) % 50
         except StopIteration:
             break

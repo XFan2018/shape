@@ -2,7 +2,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import numpy as np
-from scrambleTransform import ScrambleTransform, ScrambleRandomTransform
+# from shape_selectivity_analysis.checkerboard_training.scrambleTransform import ScrambleTransform
 
 
 class ConfigTrainImagenet:
@@ -42,21 +42,21 @@ class ConfigTrainImagenet:
                                                   shuffle=self.shuffle,
                                                   num_workers=self.workers)
 
-        self.scrambled_transform = transforms.Compose([transforms.Resize(256),
-                                                       transforms.CenterCrop(224),
-                                                       ScrambleTransform(block_size),
-                                                       transforms.ToTensor(),
-                                                       transforms.Normalize((0.485, 0.456, 0.406),
-                                                                            (0.229, 0.224, 0.225))])
-
-        # scrambled dataloader
-        self.scrambled_dataset = torchvision.datasets.ImageFolder(root=self.__dataset_dir,
-                                                                  transform=self.scrambled_transform)
-
-        self.scrambled_loader = torch.utils.data.DataLoader(self.scrambled_dataset,
-                                                            batch_size=self.batch_size,
-                                                            shuffle=self.shuffle,
-                                                            num_workers=self.workers)
+        # self.scrambled_transform = transforms.Compose([transforms.Resize(256),
+        #                                                transforms.CenterCrop(224),
+        #                                                ScrambleTransform(block_size),
+        #                                                transforms.ToTensor(),
+        #                                                transforms.Normalize((0.485, 0.456, 0.406),
+        #                                                                     (0.229, 0.224, 0.225))])
+        #
+        # # scrambled dataloader
+        # self.scrambled_dataset = torchvision.datasets.ImageFolder(root=self.__dataset_dir,
+        #                                                           transform=self.scrambled_transform)
+        #
+        # self.scrambled_loader = torch.utils.data.DataLoader(self.scrambled_dataset,
+        #                                                     batch_size=self.batch_size,
+        #                                                     shuffle=self.shuffle,
+        #                                                     num_workers=self.workers)
 
 
 if __name__ == "__main__":
