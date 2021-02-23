@@ -7,9 +7,9 @@ import numpy as np
 import random
 
 im1 = Image.open(
-    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00007197.JPEG")
+    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040753.JPEG")
 im2 = Image.open(
-    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040342.JPEG")
+    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040871.JPEG")
 
 transform = torchvision.transforms.Compose(
     [torchvision.transforms.Resize(256),
@@ -80,10 +80,10 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                                         k * size) + lattice or n > (k + 1) * size -1 - lattice)
                             if rand >= 0.5:
                                 if is_boundary:
-                                    pixel_map1_new[m, n] = (0, 0, 0)
+                                    pixel_map1_new[m, n] = (128, 128, 128)
                             else:
                                 if is_boundary:
-                                    pixel_map2_new[m, n] = (0, 0, 0)
+                                    pixel_map2_new[m, n] = (128, 128, 128)
             if j == number:
                 continue
             for m in range(i * size, (i + 1) * size):
@@ -94,12 +94,12 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                         is_boundary = False
                     if rand >= 0.5:
                         if is_boundary:
-                            pixel_map1_new[m, n] = (0, 0, 0)
+                            pixel_map1_new[m, n] = (128, 128, 128)
                         else:
                             pixel_map1_new[m, n] = pixel_map2_new[m, n]
                     else:
                         if is_boundary:
-                            pixel_map2_new[m, n] = (0, 0, 0)
+                            pixel_map2_new[m, n] = (128, 128, 128)
                         else:
                             pixel_map2_new[m, n] = pixel_map1_new[m, n]
 
@@ -205,7 +205,7 @@ def checkerboard_scrambled_gray(im2, size, horizontal_only=False):
     return im2_new
 
 
-def checkerboard_batch(im1_batch, im2_batch, block_size, horizontal_only=False):
+def checkerboard_batch(im1_batch, im2_batch, block_size, horizontal_only=False, use_lattice=False):
     """
     :param im1_batch: a batch of numpy images (ground truth)
     :param im2_batch: a batch of numpy images (adversary)
@@ -218,7 +218,7 @@ def checkerboard_batch(im1_batch, im2_batch, block_size, horizontal_only=False):
     result = []
     length = len(im1_batch)
     for i in range(length):
-        cb = checkerboard(im1_batch[i], im2_batch[i], block_size, horizontal_only)
+        cb = checkerboard(im1_batch[i], im2_batch[i], block_size, horizontal_only, use_lattice)
         # cb.show()
         cb = np.array(cb)
         cb = transform(cb)
@@ -272,10 +272,11 @@ def checkerboard_scrambled_gray_batch(im2_batch, block_size, horizontal_only=Fal
 
 
 if __name__ == "__main__":
-    im1_new = checkerboard(im1, im2, 56, True, True)
+    # im1_new = checkerboard(im1, im2, 56, True, True)
     # transform1 = transforms.ToTensor()
     # transform2 = transforms.ToPILImage()
     # im1 = transform1(im1)
     # im1 = transform2(im1)
     #
-    im1_new.show()
+    # im1_new.show()
+    pass

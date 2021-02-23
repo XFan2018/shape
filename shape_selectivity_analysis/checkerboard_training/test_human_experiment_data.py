@@ -212,11 +212,11 @@ def run_human_test_checkerboard():
     model = torchvision.models.vgg16_bn(pretrained=True)
     # model = torch.load(
     #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
-    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN) # "blocksize"+str(args.block_size)
+    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, "blocksize"+str(args.block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
-    dataset = HumanCheckerboardDataset(dataset_path, transform=transform, extensions=("jpeg",))
+    dataset = HumanCheckerboardDataset(dataset_path, transform=transform, extensions=("jpeg",), is_checkerboard=True)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -232,7 +232,7 @@ def run_human_test_checkerboard():
 
 
 if __name__ == "__main__":
-    run_human_test()
+    run_human_test_checkerboard()
     # dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN)
     # transform = torchvision.transforms.Compose([transforms.ToTensor(),
     #                                             transforms.Normalize((0.485, 0.456, 0.406),

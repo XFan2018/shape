@@ -39,7 +39,7 @@ def dfs_freeze(model):
         dfs_freeze(child)
 
 
-def run_train_finetune(block_size, horizontal):
+def run_train_finetune(block_size, horizontal, lattice):
     config_train = ConfigTrainImagenet(args.dataset, int(args.epochs), float(args.learning_rate), shuffle=True)
     config_valid = ConfigTrainImagenet(args.validset, int(args.epochs), float(args.learning_rate), shuffle=False)
     train_dataloader = config_train.loader
@@ -76,7 +76,8 @@ def run_train_finetune(block_size, horizontal):
                                                                                 block_size=block_size,
                                                                                 fc_only=bool(args.fc_only),
                                                                                 patience=20,
-                                                                                horizontal=horizontal)
+                                                                                horizontal=horizontal,
+                                                                                use_lattice=lattice)
 
     if bool(args.fc_only):
         new_state_dict = {}
@@ -224,8 +225,8 @@ def run_test_gray(model_trained, block_size, stop_point, intact, horizontal):
                     horizontal=horizontal)
 
 
-def run(block_size, horizontal):
-    model_trained, train_loss, valid_loss, stop_point = run_train_finetune(block_size, horizontal)
+def run(block_size, horizontal, lattice):
+    model_trained, train_loss, valid_loss, stop_point = run_train_finetune(block_size, horizontal, lattice)
     plot(block_size, train_loss, valid_loss)
     # run_test_scramble_checkerboard(model_trained, block_size, stop_point, horizontal)
     # run_test_intact(model_trained, block_size, stop_point)
@@ -261,7 +262,7 @@ def plot(block_size, train_loss, valid_loss):
 
     plt.xlabel('epochs')
     plt.ylabel('loss')
-    plt.ylim(0, 0.5)  # consistent scale
+    # plt.ylim(0, 0.5)  # consistent scale
     plt.xlim(0, len(train_loss) + 1)  # consistent scale
     plt.grid(True)
     plt.legend()
@@ -271,4 +272,4 @@ def plot(block_size, train_loss, valid_loss):
 
 
 if __name__ == "__main__":
-    run_gray(0, True)
+    run(0, True, True)

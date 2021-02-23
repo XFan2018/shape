@@ -3,7 +3,9 @@ import time
 import torch
 import numpy as np
 import os
-from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_batch, checkerboard_scrambled_gray_batch, checkerboard_intact_gray_batch
+import sys
+sys.path.append(os.path.split(os.getcwd())[0])
+from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_scrambled_gray_batch, checkerboard_intact_gray_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
 import torchvision.transforms as transforms
 
@@ -175,6 +177,10 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
                 running_corrects_top1 = 0
                 running_corrects_top5 = 0
 
+            ########## to delete ###########
+            if data_index == 9:
+                break
+
         ######################
         # validate the model #
         ######################
@@ -193,6 +199,11 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
                 output = model(inputs)
                 loss = criterion(output, labels1)
                 valid_losses.append(loss.item())
+
+            ########## to delete ###########
+            if data_index == 9:
+                break
+
         train_loss = np.average(train_losses)
         valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)

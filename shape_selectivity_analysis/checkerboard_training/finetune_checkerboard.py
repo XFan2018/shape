@@ -21,7 +21,7 @@ def set_bn_eval(module):
 
 
 def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders2, criterion, optimizer, num_epochs, device, batch_size, model_path,
-                log_path, block_size, fc_only, patience, horizontal):
+                log_path, block_size, fc_only, patience, horizontal, use_lattice):
     since = time.time()
     # block_size == 0 -> user random block sizes
     block_sizes = [7, 14, 28, 56]
@@ -123,7 +123,7 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
             print(type(inputs1[0]))
             if random_block_size:
                 block_size = random.choice(block_sizes)
-            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal)
+            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal, use_lattice)
             inputs = inputs.to(device)
 
             print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
@@ -204,7 +204,7 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
             labels2 = labels2.to(device)
             if random_block_size:
                 block_size = random.choice(block_sizes)
-            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal)
+            inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal, use_lattice)
             inputs = inputs.to(device)
             with torch.set_grad_enabled(False):
                 output = model(inputs)

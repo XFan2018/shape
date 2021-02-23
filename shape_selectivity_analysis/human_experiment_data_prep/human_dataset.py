@@ -101,7 +101,7 @@ class HumanCheckerboardDataset:
     """
 
     def __init__(self, root, loader=default_loader, extensions=None, transform=None,
-                 target_transform=None, is_valid_file=None):
+                 target_transform=None, is_valid_file=None, is_checkerboard=False):
         super(HumanCheckerboardDataset, self).__init__()
         self.root = root
         self.transform = transform
@@ -121,6 +121,7 @@ class HumanCheckerboardDataset:
         self.class_to_idx = class_to_idx
         self.samples = samples
         self.targets = [s[1] for s in samples]
+        self.is_checkerboard = is_checkerboard
 
     def _find_classes(self, dir):
         """
@@ -149,19 +150,22 @@ class HumanCheckerboardDataset:
             tuple: (sample, target) where target is class_index of the target class.
         """
         path, target = self.samples[index]
-        # image_name = os.path.split(path)[1].split("-")[1].split(".")[0]
+        if self.is_checkerboard:
+            image_name = os.path.split(path)[1].split("-")[1].split(".")[0]
         blocksize = os.path.split(path)[1].split("_")[0]
         blocksize = int(''.join([i for i in blocksize if i.isdigit()]))
         print(blocksize)
-        # distractor_name = ''.join([i for i in image_name if not i.isdigit()])
-        # distractor_class = cate_dict[distractor_name]
-        # print(image_name)
+        if self.is_checkerboard:
+            distractor_name = ''.join([i for i in image_name if not i.isdigit()])
+            distractor_class = cate_dict[distractor_name]
+            print(image_name)
         sample = self.loader(path)
         if self.transform is not None:
             sample = self.transform(sample)
         if self.target_transform is not None:
             target = self.target_transform(target)
-
+        if self.is_checkerboard:
+            return sample, target, distractor_class, blocksize
         return sample, target, blocksize  # sample, target, blocksize   # sample, target, distractor_class, blocksize
 
     def __len__(self):

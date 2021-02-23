@@ -238,17 +238,51 @@ class IndexRotate(object):
 
 
 class RandomTranslation(object):
-    def __init__(self, coefficient):
-        self.coefficient = coefficient
+    def __init__(self):
+        pass
 
     def __call__(self, points):
         if points.shape[0] == 2:
-            distance = np.random.normal(loc=0.0, scale=0.1, size=(2, len(points[0]))) * self.coefficient
+            distance = np.random.normal(loc=0.0, scale=0.001, size=(2, len(points[0])))
             points += distance
         else:
-            distance = np.random.normal(loc=0.0, scale=0.1, size=(len(points), 2)) * self.coefficient
+            distance = np.random.normal(loc=0.0, scale=0.001, size=(len(points), 2))
             points += distance
         return points
+
+
+class ComplexGaussianNoise(object):
+    '''
+        std_dev of the added gaussian noise is proportional to (abs(k)^-alpha) * beta
+    '''
+
+    def __init__(self, alpha, beta):
+        self.alpha = alpha
+        self.beta = beta
+
+    def __call__(self, points):
+        if points.shape[0] == 2:
+            contour_complex = np.zeros(points.shape[1], dtype=complex)
+            contour_complex.real = points[0, :]
+            contour_complex.imag = points[1, :]
+            fft_num = points.shape[1]
+            fd = np.fft.fft(contour_complex, fft_num)
+            fd.real = np.roll(fd.real, fft_num // 2)
+            fd.imag = np.roll(fd.imag, fft_num // 2)
+            noise = np.zeros(fd.shape, dtype=complex)
+            k = np.array(list(reversed(range(1, fft_num // 2 + 1))) + [1] + list(range(1, fft_num // 2)))
+            noise_real = [np.random.normal(0.0, self.beta * pow(i, self.alpha), size=1) for i in k]
+            noise_imaginary = [np.random.normal(0.0, self.beta * pow(i, self.alpha), size=1) for i in k]
+            noise.real = np.concatenate(noise_real)
+            noise.imag = np.concatenate(noise_imaginary)
+            noise.real[fft_num // 2] = 0
+            noise.imag[fft_num // 2] = 0
+            fd_noise = fd + noise
+            fd_noise.real = np.roll(fd_noise.real, fft_num // 2)
+            fd_noise.imag = np.roll(fd_noise.imag, fft_num // 2)
+            ifd = np.fft.ifft(fd_noise)
+            points = np.vstack([ifd.real, ifd.imag])
+            return points
 
 
 def index_start_from_left(points):
@@ -293,6 +327,5 @@ if __name__ == "__main__":
     # fd_1dim = np.array(fd_1dim)
     # print(fd_1dim)
     ############### numpy #######################
-    x = np.array([[1, 2, 3], [4, 5, 6]])
-    y = np.array([[2, 3, 4], [1, 2, 3]])
-    print(np.random.normal(loc=0.0, scale=0.1, size=(2, 32)) * 0.1)
+    x = np.array(list(reversed(range(1, 16))) + [1] + list(range(1, 16)))
+    print(x)

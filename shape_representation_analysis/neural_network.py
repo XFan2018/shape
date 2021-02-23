@@ -445,9 +445,73 @@ class VGG6PolygonCoordinates_dropout(nn.Module):
         return x
 
 
-class VGG4PolygonCoordinates(nn.Module):
+class VGG5PolygonCoordinates_dropout_selfAttention(nn.Module):
+    def __init__(self, channel1, channel2, channel3, input1, input2):
+        super(VGG5PolygonCoordinates_dropout_selfAttention, self).__init__()
+        self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
+        self.conv1d_1_bn = nn.BatchNorm1d(channel1)
+        self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
+        self.conv1d_2_bn = nn.BatchNorm1d(channel2)
+        self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_3_bn = nn.BatchNorm1d(channel3)
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.input1 = input1
+        self.fc1 = nn.Linear(input1, input2)
+        self.fc1_bn = nn.BatchNorm1d(input2)
+        self.dropout1 = nn.Dropout(0.2)
+        self.fc2 = nn.Linear(input2, 17)
+        self.multi_head_attention = MultiHeadAttention(1, 2)  # 1 head and 2 dim (x, y)
+        # self.leaky_relu = activation_func("leaky_relu")
+
+    def forward(self, x):
+        # x.unsqueeze_(1)
+        print(x.shape)
+        x = self.multi_head_attention(x, x, x)
+        print(f"self attention output: {x.shape}")
+        x = torch.tanh(self.conv1d_1_bn(self.conv1d_1(x)))
+        # x = self.leaky_relu(self.conv1d_1_bn(self.conv1d_1(x)))
+        x = self.pool1d_1(x)
+        x = torch.tanh(self.conv1d_2_bn(self.conv1d_2(x)))
+        # x = self.leaky_relu(self.conv1d_2_bn(self.conv1d_2(x)))
+        x = self.pool1d_2(x)
+        x = torch.tanh(self.conv1d_3_bn(self.conv1d_3(x)))
+        # x = self.leaky_relu(self.conv1d_3_bn(self.conv1d_3(x)))
+        x = self.pool1d_3(x)
+        x = x.view((-1, self.input1))
+        x = torch.tanh(self.fc1_bn(self.fc1(self.dropout1(x))))
+        # x = self.leaky_relu(self.fc1_bn(self.fc1(self.dropout1(x))))
+        x = self.fc2(x)
+        print(x.shape)
+        return x
+
+
+class PolygonCoordinates_dropout_selfAttention(nn.Module):
+    def __init__(self, head, input1, input2):
+        super(PolygonCoordinates_dropout_selfAttention, self).__init__()
+        self.input1 = input1
+        self.input2 = input2
+        self.fc1 = nn.Linear(input1, input2)
+        self.fc1_bn = nn.BatchNorm1d(input2)
+        self.dropout1 = nn.Dropout(0.2)
+        self.fc2 = nn.Linear(input2, 17)
+        self.multi_head_attention = MultiHeadAttention(head, 2)  # 1 head and 2 dim (x, y)
+
+    def forward(self, x):
+        print(x.shape)
+        x = self.multi_head_attention(x, x, x)
+        print(f"self attention output: {x.shape}")
+        x = x.reshape((-1, self.input1))
+        x = torch.tanh(self.fc1_bn(self.fc1(self.dropout1(x))))
+        x = self.fc2(x)
+        print(x.shape)
+        return x
+
+
+class VGG4PolygonCoordinates_dropout(nn.Module):
     def __init__(self, channel1, channel2, input1, input2):
-        super(VGG4PolygonCoordinates, self).__init__()
+        super(VGG4PolygonCoordinates_dropout, self).__init__()
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
 
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
@@ -456,6 +520,8 @@ class VGG4PolygonCoordinates(nn.Module):
         self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.input1 = input1
         self.fc1 = nn.Linear(input1, input2)
+        self.fc1_bn = nn.BatchNorm1d(input2)
+        self.dropout1 = nn.Dropout(0.2)
         self.fc2 = nn.Linear(input2, 17)
 
     def forward(self, x):
@@ -466,22 +532,25 @@ class VGG4PolygonCoordinates(nn.Module):
         x = torch.tanh(self.conv1d_2(x))
         x = self.pool1d_2(x)
         x = x.view((-1, self.input1))
-        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1_bn(self.fc1(self.dropout1(x))))
         x = self.fc2(x)
         print(x.shape)
         return x
 
 
-class VGG4PolygonCoordinatesSelfAttention(nn.Module):
-    def __init__(self, channel1, channel2, input1, input2, d_model):
-        super(VGG4PolygonCoordinatesSelfAttention, self).__init__()
+class VGG5PolygonCoordinatesSelfAttention(nn.Module):
+    def __init__(self, channel1, channel2, channel3, input1, input2, head, d_model):
+        super(VGG5PolygonCoordinatesSelfAttention, self).__init__()
         self.conv1d_1 = nn.Conv1d(2, channel1, kernel_size=3, padding=1, padding_mode="circular")  # 128   32
         self.conv1d_1_bn = nn.BatchNorm1d(channel1)
         self.pool1d_1 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.conv1d_2 = nn.Conv1d(channel1, channel2, kernel_size=3, padding=1, padding_mode="circular")  # 64    16
         self.conv1d_2_bn = nn.BatchNorm1d(channel2)
         self.pool1d_2 = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.multi_head_attention = MultiHeadAttention(1, d_model)
+        self.conv1d_3 = nn.Conv1d(channel2, channel3, kernel_size=3, padding=1, padding_mode="circular")  # 32    8
+        self.conv1d_3_bn = nn.BatchNorm1d(channel3)
+        self.pool1d_3 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.multi_head_attention = MultiHeadAttention(head, d_model)
         self.input1 = input1
         self.fc1 = nn.Linear(input1, input2)
         self.dropout1 = nn.Dropout(0.2)
@@ -494,9 +563,11 @@ class VGG4PolygonCoordinatesSelfAttention(nn.Module):
         x = self.pool1d_1(x)
         x = torch.tanh(self.conv1d_2_bn(self.conv1d_2(x)))
         x = self.pool1d_2(x)
+        x = torch.tanh(self.conv1d_3_bn(self.conv1d_3(x)))
+        x = self.pool1d_3(x)
         x = self.multi_head_attention(x, x, x)
         print("attention output: ", x.shape)
-        x = x.view((-1, self.input1))
+        x = x.reshape((-1, self.input1))
         x = torch.tanh(self.fc1(self.dropout1(x)))
         x = self.fc2(x)
         print(x.shape)
@@ -1267,7 +1338,7 @@ class MultiHeadAttention(nn.Module):
 
     def attention(self, q, k, v, d_k, mask=None, dropout=None):
 
-        scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
+        scores = torch.matmul(k.transpose(1, 2), q.transpose(1, 2).transpose(2, 3)) / math.sqrt(d_k)
 
         if mask is not None:
             mask = mask.unsqueeze(1)
@@ -1278,32 +1349,35 @@ class MultiHeadAttention(nn.Module):
         if dropout is not None:
             scores = dropout(scores)
 
+        v = v.transpose(1, 2)
         output = torch.matmul(scores, v)
+        output = output.transpose(1, 2)
         return output
 
     def forward(self, q, k, v, mask=None):
         bs = q.size(0)
 
-        # perform linear operation and split into h heads
+        # transpose to get dimensions bs * h * sl * d_model
 
+        # k = k.transpose(1, 2)
+        # q = q.transpose(1, 2)
+        # v = v.transpose(1, 2)
+
+        # perform linear operation and split into h heads
         k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
         q = self.q_linear(q).view(bs, -1, self.h, self.d_k)
         v = self.v_linear(v).view(bs, -1, self.h, self.d_k)
 
-        # transpose to get dimensions bs * h * sl * d_model
-
-        k = k.transpose(1, 2)
-        q = q.transpose(1, 2)
-        v = v.transpose(1, 2)
         # calculate attention using function we will define next
-        scores = self.attention(q, k, v, self.d_k, mask, self.dropout)
+        scores = self.attention(q, k, v, self.d_k, mask, None)
+        print(f"scores dim: {scores.shape}")
 
         # concatenate heads and put through final linear layer
         concat = scores.transpose(1, 2).contiguous() \
             .view(bs, -1, self.d_model)
 
         output = self.out(concat)
-
+        output = output.transpose(1, 2)
         return output
 
 
