@@ -1,0 +1,8 @@
+comet-ml==3.4.0
+configobj==5.0.6
+pandas==1.2.3
+pipdeptree==2.0.0
+python-dotenv==0.15.0
+scikit-image==0.18.1
+torchvision==0.9.0
+wheel==0.36.2

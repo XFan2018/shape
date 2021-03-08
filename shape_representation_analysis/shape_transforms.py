@@ -1,11 +1,11 @@
-from shape_representation_analysis.sparse_coding import im2poly
-from sparse_coding import *
-import matplotlib.pyplot as plt
-import torch_interpolations
-import torch
-import numpy as np
 import random
-from PIL import Image
+
+import torch
+
+import torch_interpolations
+from sparse_coding import *
+
+random.seed(os.getenv("SEED"))
 
 
 class PolygonTransform(object):

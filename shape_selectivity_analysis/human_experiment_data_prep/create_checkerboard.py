@@ -10,7 +10,8 @@ from shape_selectivity_analysis.checkerboard_training.scrambleImage import scram
 from shape_selectivity_analysis.checkerboard_training.scrambleTransform import HorizontalScrambleTransform
 from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_intact_gray, \
     checkerboard
-random.seed(10)
+print(os.getenv("SEED"))
+random.seed(os.getenv("SEED"))
 block_sizes = [7, 14, 28, 56]
 cate_dict = {
     0: "bear",
@@ -22,6 +23,7 @@ cate_dict = {
     6: "dog",
     7: "truck"
 }
+img_format = "png"
 
 for x in block_sizes:
     trans_intact = transforms.Compose([transforms.Resize(256),
@@ -60,7 +62,8 @@ for x in block_sizes:
             cate = cate_dict[label_intact]
             cate_jumbled = cate_dict[label_jumbled]
             print(cate)
-            img = checkerboard(data_intact, data_jumbled, x, True, True)
+            img = checkerboard(data_intact, data_jumbled, x, True, False)
+            img_lattice = checkerboard(data_intact, data_jumbled, x, True, True)
             img_intact = Image.fromarray(data_intact)
             temp = np.transpose(data_intact, (2, 0, 1))
             temp = scramble_image_row(temp, x, x)
@@ -68,22 +71,27 @@ for x in block_sizes:
             img_jumbled = Image.fromarray(temp)
             img_gray = checkerboard_intact_gray(data_intact, x)
 
-            # img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.jpeg"))
-            # img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-            # img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            if not os.path.exists(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate))
+            img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.{img_format}"))
+
+            if not os.path.exists(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate))
+            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.{img_format}"))
+
+            if not os.path.exists(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, f"blocksize{x}", cate))
+            img_lattice.save(
+                os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.{img_format}"))
+
+            if not os.path.exists(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate))
+            img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.{img_format}"))
+
+            if not os.path.exists(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate))
+            img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.{img_format}"))
+
             i = (i + 1) % 50
         except StopIteration:
             break
-    # i = 0
-    # while True:
-    #     try:
-    #         data_intact, label_intact = next(it_intact)
-    #         data_intact = np.array(data_intact)
-    #         cate = cate_dict[label_intact]
-    #         print(cate)
-    #         img_gray = checker_board_intact_gray(data_intact, x)
-    #         img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
-    #         i = (i + 1) % 50
-    #     except StopIteration:
-    #         break

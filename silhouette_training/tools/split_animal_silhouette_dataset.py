@@ -1,6 +1,8 @@
 import os
 import random
 
+random.seed(os.getenv("SEED"))
+
 def copy_folders(src, dst):
     """
     :param src: path of the folder to be copied

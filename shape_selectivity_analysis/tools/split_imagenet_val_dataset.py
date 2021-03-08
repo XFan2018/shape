@@ -2,6 +2,8 @@ import os
 import random
 import shutil
 
+random.seed(os.getenv("SEED"))
+
 
 def copy_folders(src, dst):
     """

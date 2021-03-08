@@ -1,23 +1,21 @@
-import os
 import random
-import torch
-from torch import nn
-import torchvision
+import sys
 import time
 from os import path
-import sys
+
+import torch
+import torchvision
 
 sys.path.append(sys.path.append(r"D:\projects\shape"))
-from settings import *
 import warnings
 
 warnings.filterwarnings("ignore")
 from torchvision import transforms
 from shape_selectivity_analysis.human_experiment_data_prep.category_mapping import *
-from shape_selectivity_analysis.checkerboard_training.Vgg16Model_CheckerBoard_train import ConfigTrainImagenet
 from shape_selectivity_analysis.human_experiment_data_prep.human_dataset import HumanCheckerboardDataset
 import argparse
 
+random.seed(os.getenv("SEED"))
 parser = argparse.ArgumentParser(description="finetune with scrambled checkerboard image")
 parser.add_argument("-ds", "--dataset", help="path to training dataset")
 parser.add_argument("-ts", "--testset", help="path to testing dataset")
@@ -30,8 +28,6 @@ parser.add_argument("-mp", "--model_path", help="model path")
 parser.add_argument("-fc", "--fc_only", help="train fc only")
 parser.add_argument("-bs", "--block_size", help="block size of checkerboard", type=int)
 args = parser.parse_args()
-
-random.seed(10)
 
 
 def test_model_human_experiment(model, test_loader, log_path, device, model_path, batch_size):
@@ -185,7 +181,7 @@ def run_human_test():
     model = torchvision.models.vgg16_bn(pretrained=True)
     # model = torch.load(
     #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
-    dataset_path = os.path.join(INTACT_DATASET_HUMAN) # "blocksize"+str(args.block_size)
+    dataset_path = os.path.join(INTACT_DATASET_HUMAN)  # "blocksize"+str(args.block_size)
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
@@ -212,7 +208,7 @@ def run_human_test_checkerboard():
     model = torchvision.models.vgg16_bn(pretrained=True)
     # model = torch.load(
     #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
-    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, "blocksize"+str(args.block_size))
+    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, "blocksize" + str(args.block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
