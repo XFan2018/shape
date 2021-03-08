@@ -1,9 +1,18 @@
-IMAGENET_DIR = r"D:\projects\shape_dataset\imagenet_val"
-IMAGENET_16CAT_DIR = r"D:\projects\shape_dataset\imagenet_16categories"
-CHECKERBOARD_PREP = r"D:\projects\shape_dataset\checkerboard_prep_new"
-CHECKERBOARD_DATASET_HUMAN = r"D:\projects\shape_dataset\checkerboard_dataset_human_new2"
-CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK = r"D:\projects\shape_dataset\checkerboard_lattice_dataset_human_black"
-CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY = r"D:\projects\shape_dataset\checkerboard_lattice_dataset_human_gray"
-CHECKERBOARD_GRAY_DATASET_HUMAN = r"D:\projects\shape_dataset\xingye_stimuli\checkerboard_gray_dataset_human"
-INTACT_DATASET_HUMAN = r"D:\projects\shape_dataset\xingye_stimuli\intact_dataset_human"
-JUMBLED_DATASET_HUMAN = r"D:\projects\shape_dataset\xingye_stimuli\jumbled_dataset_human"
+import os
+
+from dotenv import load_dotenv
+from pathlib import Path
+load_dotenv(verbose=True)
+env_path = Path('.') / '.env'
+load_dotenv(dotenv_path=env_path)
+shape_path = os.path.dirname(os.path.realpath(__file__))
+prefix = "/Users/leo/Dropbox/shape_dataset/"
+IMAGENET_DIR = fr"{prefix}imagenet_val"
+IMAGENET_16CAT_DIR = fr"{prefix}imagenet_16categories"
+CHECKERBOARD_PREP = rf"{prefix}checkerboard_prep_new"
+CHECKERBOARD_DATASET_HUMAN = rf"{prefix}checkerboard_dataset_human_png"
+CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK = fr"{prefix}checkerboard_lattice_dataset_human_black_png"
+CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY = fr"{prefix}checkerboard_lattice_dataset_human_gray_png"
+CHECKERBOARD_GRAY_DATASET_HUMAN = fr"{prefix}checkerboard_gray_dataset_human_png"
+INTACT_DATASET_HUMAN = fr"{prefix}intact_dataset_human_png"
+JUMBLED_DATASET_HUMAN = fr"{prefix}jumbled_dataset_human_png"

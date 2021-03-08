@@ -3,6 +3,7 @@ import os
 from settings import *
 import shutil
 
+random.seed(os.getenv("SEED"))
 selected_cate = ["bear", "truck", "boat", "bottle", "cat", "bird", "chair", "dog"]
 
 

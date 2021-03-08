@@ -1,11 +1,10 @@
 import os
-from torchvision.datasets.vision import VisionDataset
-from torchvision.datasets.folder import make_dataset, pil_loader
-from PIL import Image
-import random
-import torch
+
 import numpy as np
-from torchvision import transforms
+import torch
+from PIL import Image
+from torchvision.datasets.folder import make_dataset
+from torchvision.datasets.vision import VisionDataset
 
 animal_label = {
     "bird":         0,

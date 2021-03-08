@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torchvision
 from PIL import Image
@@ -5,11 +7,12 @@ from shape_selectivity_analysis.checkerboard_training.scrambleImage import scram
 import torchvision.transforms as transforms
 import numpy as np
 import random
+from settings import shape_path
 
-im1 = Image.open(
-    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040753.JPEG")
-im2 = Image.open(
-    r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\ILSVRC2012_val_00040871.JPEG")
+random.seed(os.getenv("SEED"))
+
+im1 = Image.open(os.path.join(shape_path, "shape_selectivity_analysis/checkerboard_training/ILSVRC2012_val_00040753.JPEG"))
+im2 = Image.open(os.path.join(shape_path, "shape_selectivity_analysis/checkerboard_training/ILSVRC2012_val_00040871.JPEG"))
 
 transform = torchvision.transforms.Compose(
     [torchvision.transforms.Resize(256),
@@ -77,7 +80,7 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                         print(k)
                         for n in range(k * size, (k + 1) * size):
                             is_boundary = (m < (i * size) + lattice or m > (i + 1) * size - 1 - lattice or n < (
-                                        k * size) + lattice or n > (k + 1) * size -1 - lattice)
+                                    k * size) + lattice or n > (k + 1) * size - 1 - lattice)
                             if rand >= 0.5:
                                 if is_boundary:
                                     pixel_map1_new[m, n] = (128, 128, 128)
@@ -89,7 +92,8 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
             for m in range(i * size, (i + 1) * size):
                 for n in range(j * size, (j + 1) * size):
                     if use_lattice:
-                        is_boundary = (m < (i * size) + lattice or m > (i + 1) * size -1 - lattice or n < (j * size) + lattice or n > (j + 1) * size -1 - lattice)
+                        is_boundary = (m < (i * size) + lattice or m > (i + 1) * size - 1 - lattice or n < (j * size) + lattice or n > (
+                                    j + 1) * size - 1 - lattice)
                     else:
                         is_boundary = False
                     if rand >= 0.5:
@@ -102,8 +106,6 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                             pixel_map2_new[m, n] = (128, 128, 128)
                         else:
                             pixel_map2_new[m, n] = pixel_map1_new[m, n]
-
-
 
     if rand >= 0.5:
         return im1_new

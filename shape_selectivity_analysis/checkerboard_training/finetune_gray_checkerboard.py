@@ -1,14 +1,17 @@
-import random
-import time
-import torch
-import numpy as np
 import os
+import random
 import sys
+import time
+
+import numpy as np
+import torch
+
 sys.path.append(os.path.split(os.getcwd())[0])
 from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_scrambled_gray_batch, checkerboard_intact_gray_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
-import torchvision.transforms as transforms
 
+
+random.seed(os.getenv("SEED"))
 """
 fine-tune on scrambled checker board
 two dataloaders are used, one is for ground truth images, and the other is for adversarial attack images

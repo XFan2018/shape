@@ -1,11 +1,11 @@
 import os
-from torchvision.datasets.vision import VisionDataset
-from torchvision.datasets.folder import make_dataset, pil_loader
-from PIL import Image
+
 import numpy as np
-import random
 import torch
+from PIL import Image
 from torchvision import transforms
+from torchvision.datasets.folder import make_dataset
+from torchvision.datasets.vision import VisionDataset
 
 
 class CheckerboardDataset(VisionDataset):

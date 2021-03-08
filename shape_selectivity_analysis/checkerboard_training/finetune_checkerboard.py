@@ -1,11 +1,14 @@
-import time
-import torch
-import numpy as np
 import os
+import random
+import time
+
+import numpy as np
+import torch
+
 from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard import checkerboard_batch
 from shape_selectivity_analysis.tools.pytorchtools import EarlyStopping
-import random
-import torchvision.transforms as transforms
+
+random.seed(os.getenv("SEED"))
 
 """
 fine-tune on scrambled checker board
