@@ -1,5 +1,9 @@
 import numpy as np
 import torch
+import os
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 class EarlyStopping:

@@ -2,7 +2,10 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from DamageNetDataset import DamageNetDataset
-
+import os
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 class ConfigTestImagenet:
     def __init__(self, damagenet_dataset, damagenet_label, batch_size, workers):

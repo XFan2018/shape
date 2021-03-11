@@ -8,6 +8,9 @@ import torchvision.transforms as transforms
 import numpy as np
 import random
 from settings import shape_path
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 random.seed(os.getenv("SEED"))
 

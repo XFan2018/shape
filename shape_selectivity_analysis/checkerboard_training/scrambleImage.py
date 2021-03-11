@@ -3,6 +3,12 @@ import numpy as np
 import torch
 from PIL import Image
 import matplotlib.pyplot as plt
+import os
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+np.random.seed(os.getenv("SEED"))
 
 
 def split_image_into_blocks(img, xdim=1, ydim=1):

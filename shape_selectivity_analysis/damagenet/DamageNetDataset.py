@@ -7,6 +7,9 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 class DamageNetDataset(VisionDataset):

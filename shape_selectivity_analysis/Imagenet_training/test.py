@@ -2,6 +2,9 @@ import time
 import torch
 from os import path
 import os
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def test_model(model, test_loader, log_path, device, scrambled, size):

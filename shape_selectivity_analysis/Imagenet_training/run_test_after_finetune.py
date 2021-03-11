@@ -1,7 +1,10 @@
 import torch
+import os
 from project1.Vgg16Model_val_imagenet import ConfigTestImagenet
 from project1.test_after_finetune import test_finetuned_model
-
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 def run_test_after_finetune():
     config1 = ConfigTestImagenet()

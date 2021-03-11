@@ -5,7 +5,10 @@ from os import path
 
 import torch
 import torchvision
-
+import os
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 sys.path.append(sys.path.append(r"D:\projects\shape"))
 import warnings
 

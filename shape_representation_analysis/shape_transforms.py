@@ -4,7 +4,8 @@ import torch
 
 import torch_interpolations
 from sparse_coding import *
-
+import os
+np.random.seed(os.getenv("SEED"))
 random.seed(os.getenv("SEED"))
 
 

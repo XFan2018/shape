@@ -1,12 +1,17 @@
-from image_to_polygon import PolygonTransform, TurningAngleTransform, FourierDescriptorTransform
-from Hemera_dataset import HemeraDataset
-from Animal_dataset import AnimalDataset
-import torchvision
-import torch
+import os
+
 import numpy as np
-import csv
-import matplotlib.pyplot as plt
 import pandas as pd
+import torch
+import torchvision
+from image_to_polygon import PolygonTransform, TurningAngleTransform, FourierDescriptorTransform
+
+from Animal_dataset import AnimalDataset
+from Hemera_dataset import HemeraDataset
+
+torch.manual_seed(os.getenv("SEED"))
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 polygon_number = 128
 dataset_path = r"D:\projects\shape_dataset\Hemera"
