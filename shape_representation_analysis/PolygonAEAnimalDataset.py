@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import torchvision
 import numpy as np
 from shape_representation_analysis.shape_transforms import RandomRotatePoints, RandomFlipPoints, IndexRotate, \
-    RandomTranslation, ComplexGaussianNoise
+    WhiteNoise, LowPassNoise
 
 
 class PolygonAEAnimalDataset():
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     vft = RandomFlipPoints(0.2, True)
     irt = IndexRotate()
     # rtt = RandomTranslation()
-    cgn = ComplexGaussianNoise(-1.5, 1)
+    cgn = LowPassNoise(-1.5, 1)
     transforms = torchvision.transforms.Compose([hft, rrt, irt])
     # transforms = torchvision.transforms.Compose([])
     dataset = PolygonAEAnimalDataset(r"D:\projects\shape\shape_representation_analysis\polygon_animal_dataset.csv",

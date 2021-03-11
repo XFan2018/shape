@@ -17,7 +17,7 @@ from sparse_coding import *
 from shape_representation_analysis.shape_transforms import TurningAngleTransform, PolygonTransform, Angle2VecTransform, \
     RandomRotatePoints, \
     FourierDescriptorTransform, InterpolationTransform, InterpolationTransform2, EqualArclengthTransform, \
-    RandomRotatePoints, RandomFlipPoints, RandomTranslation, IndexRotate, ComplexGaussianNoise
+    RandomRotatePoints, RandomFlipPoints, WhiteNoise, IndexRotate, LowPassNoise
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from shape_representation_analysis.neural_network import TurningAngleNet, Net, VGG11TurningAngle, VGG16TurningAngle, \
@@ -624,7 +624,7 @@ def polygon_training(beta):
     # vft = RandomFlipPoints(0.05, True)
     irt = IndexRotate()
     # rtt = RandomTranslation()
-    lpn = ComplexGaussianNoise(-1.5, beta)
+    lpn = LowPassNoise(-1.5, beta)
     transform = torchvision.transforms.Compose([hft, rrt, irt, lpn])
     # transform_valid = torchvision.transforms.Compose([PolygonTransform(int(args.polygon_number), False)])
     # dataset = AnimalDataset(args.dataset, args.extension, transforms=transform_train)

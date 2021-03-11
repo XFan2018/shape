@@ -237,7 +237,7 @@ class IndexRotate(object):
         return points
 
 
-class RandomTranslation(object):
+class WhiteNoise(object):
     def __init__(self):
         pass
 
@@ -251,7 +251,7 @@ class RandomTranslation(object):
         return points
 
 
-class ComplexGaussianNoise(object):
+class LowPassNoise(object):
     '''
         std_dev of the added gaussian noise is proportional to (abs(k)^-alpha) * beta
     '''
