@@ -68,5 +68,10 @@ def create_subset(original_folder_path, new_folder_path, subset_number):
 # copy_folders(r"D:\projects\shape_dataset\imagenet_val", r"D:\projects\shape\shape_selectivity_analysis\tools\demo")
 # split_folder(r"D:\projects\shape_dataset\animal_dataset", r"D:\projects\shape_dataset\animal_dataset_validation", 0.2)
 # create_demo_files(r"D:\projects\shape\shape_selectivity_analysis\tools\demo")
-create_subset(r"D:\projects\shape\shape_selectivity_analysis\tools\demo",
-              r"D:\projects\shape\shape_selectivity_analysis\tools\new_demo", 5)
+
+
+if __name__ == "__main__":
+    original_folder_path = r"/home/xingye/train"
+    new_folder_path = r"/home/xingye/ImageNet_subset_50000"
+    subset_number = 50
+    create_subset(original_folder_path, new_folder_path, subset_number)
