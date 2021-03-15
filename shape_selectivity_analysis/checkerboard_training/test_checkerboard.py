@@ -2,7 +2,7 @@ import time
 import torch
 import numpy as np
 import os
-from scramble_checkerboard import checker_board_batch
+from scramble_checkerboard import checkerboard_batch
 import torchvision.transforms as transforms
 
 """
@@ -37,7 +37,7 @@ def test_model(model, testloaders1, testloaders2, device, batch_size, model_path
     # Iterate over data.
     for data_index, ((inputs1, labels1), (inputs2, labels2)) in enumerate(zip(testloaders1, testloaders2)):
 
-        inputs = checker_board_batch(inputs1, inputs2, block_size, horizontal)
+        inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal)
         inputs = inputs.to(device)
         labels1 = labels1.to(device)
         labels2 = labels2.to(device)

@@ -71,7 +71,7 @@ def create_subset(original_folder_path, new_folder_path, subset_number):
 
 
 if __name__ == "__main__":
-    original_folder_path = r"/home/xingye/train"
-    new_folder_path = r"/home/xingye/ImageNet_subset_50000"
-    subset_number = 50
-    create_subset(original_folder_path, new_folder_path, subset_number)
+    original_folder_path = r"/home/xingye/ImageNet_subset_50000"
+    new_folder_path = r"/home/xingye/ImageNet_subset_50000_val"
+    ratio = 0.8
+    split_folder(original_folder_path, new_folder_path, ratio)

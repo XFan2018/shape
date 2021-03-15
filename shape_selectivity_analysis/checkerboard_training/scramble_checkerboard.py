@@ -38,15 +38,14 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
     """
     #  scramble adversarial image
     lattice_color = 128
-    transform = transforms.ToPILImage()
-    im1 = transform(im1)
-    im2 = np.transpose(im2, (2, 0, 1))
+    im1 = np.transpose(im2, (1, 2, 0))
+    im1 = Image.fromarray((im1 * 255).astype(np.uint8))
     if horizontal_only:
         im2 = scramble_image_row(im2, size, size)
     else:
         im2 = scramble_image(im2, size, size)
     im2 = np.transpose(im2, (1, 2, 0))
-    im2 = Image.fromarray(im2)
+    im2 = Image.fromarray((im2 * 255).astype(np.uint8))
     # create new image and pixel_map (original image remain unchanged)
     pixel_map1 = im1.load()
     pixel_map2 = im2.load()
@@ -81,7 +80,6 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
             if use_lattice:
                 if k != number:
                     for m in range(i * size, (i + 1) * size):
-                        print(k)
                         for n in range(k * size, (k + 1) * size):
                             is_boundary = (m < (i * size) + lattice or m > (i + 1) * size - 1 - lattice or n < (
                                     k * size) + lattice or n > (k + 1) * size - 1 - lattice)

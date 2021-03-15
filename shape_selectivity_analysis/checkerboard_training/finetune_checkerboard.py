@@ -117,18 +117,17 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
         # train the model #
         ###################
         for data_index, ((inputs1, labels1), (inputs2, labels2)) in enumerate(zip(trainloaders1, trainloaders2)):
-            #############try to push data to device earlier#################
+            #############try to push data to device #################
             labels1 = labels1.to(device)
             labels2 = labels2.to(device)
-            # running_log = open(log_path + "/finetune_running_loss.txt", "a+")
-            # inputs1 = np.array(inputs1)
-            # inputs2 = np.array(inputs2)
+            inputs1 = np.array(inputs1)
+            inputs2 = np.array(inputs2)
             print(type(inputs1[0]))
             if random_block_size:
                 block_size = random.choice(block_sizes)
             inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal, use_lattice)
             inputs = inputs.to(device)
-
+            print(inputs.shape)
             print("\n" + "data_index: " + str(data_index), "\n" + "-" * 10)
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -205,6 +204,8 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
         for data_index, ((inputs1, labels1), (inputs2, labels2)) in enumerate(zip(validloaders1, validloaders2)):
             labels1 = labels1.to(device)
             labels2 = labels2.to(device)
+            inputs1 = np.array(inputs1)
+            inputs2 = np.array(inputs2)
             if random_block_size:
                 block_size = random.choice(block_sizes)
             inputs = checkerboard_batch(inputs1, inputs2, block_size, horizontal, use_lattice)

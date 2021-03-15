@@ -1,7 +1,7 @@
 import time
 import torch
 from os import path
-from scramble_checkerboard import checker_board_scrambled_gray_batch, checker_board_intact_gray_batch
+from scramble_checkerboard import checkerboard_scrambled_gray_batch, checkerboard_intact_gray_batch
 import os
 
 
@@ -24,9 +24,9 @@ def test_model_gray(model, test_loader, log_path, device, block_size, model_path
     for index, (inputs, labels) in enumerate(test_loader):
         labels = labels.to(device)
         if intact:
-            inputs = checker_board_intact_gray_batch(inputs, block_size)
+            inputs = checkerboard_intact_gray_batch(inputs, block_size)
         else:
-            inputs = checker_board_scrambled_gray_batch(inputs, block_size, horizontal)
+            inputs = checkerboard_scrambled_gray_batch(inputs, block_size, horizontal)
         inputs = inputs.to(device)
 
         print("\nval", str(index), "\n" + "-" * 10)
