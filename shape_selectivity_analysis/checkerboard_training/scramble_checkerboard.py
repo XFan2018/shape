@@ -37,6 +37,7 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
     :return: checkerboard image that combines ground truth image and scrambled adversarial attack image (PIL)
     """
     #  scramble adversarial image
+    lattice_color = 128
     transform = transforms.ToPILImage()
     im1 = transform(im1)
     im2 = np.transpose(im2, (2, 0, 1))
@@ -86,10 +87,10 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                                     k * size) + lattice or n > (k + 1) * size - 1 - lattice)
                             if rand >= 0.5:
                                 if is_boundary:
-                                    pixel_map1_new[m, n] = (128, 128, 128)
+                                    pixel_map1_new[m, n] = (lattice_color, lattice_color, lattice_color)
                             else:
                                 if is_boundary:
-                                    pixel_map2_new[m, n] = (128, 128, 128)
+                                    pixel_map2_new[m, n] = (lattice_color, lattice_color, lattice_color)
             if j == number:
                 continue
             for m in range(i * size, (i + 1) * size):
@@ -101,12 +102,12 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
                         is_boundary = False
                     if rand >= 0.5:
                         if is_boundary:
-                            pixel_map1_new[m, n] = (128, 128, 128)
+                            pixel_map1_new[m, n] = (lattice_color, lattice_color, lattice_color)
                         else:
                             pixel_map1_new[m, n] = pixel_map2_new[m, n]
                     else:
                         if is_boundary:
-                            pixel_map2_new[m, n] = (128, 128, 128)
+                            pixel_map2_new[m, n] = (lattice_color, lattice_color, lattice_color)
                         else:
                             pixel_map2_new[m, n] = pixel_map1_new[m, n]
 
