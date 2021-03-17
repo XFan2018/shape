@@ -196,7 +196,9 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
                 # running_corrects_top5 = 0
                 # running_attack_corrects_top1 = 0
                 # running_attack_corrects_top5 = 0
-
+            ########## to delete ###########
+            # if data_index == 9:
+            #     break
         ######################
         # validate the model #
         ######################
@@ -214,6 +216,10 @@ def train_model(model, trainloaders1, trainloaders2, validloaders1, validloaders
                 output = model(inputs)
                 loss = criterion(output, labels1)
                 valid_losses.append(loss.item())
+
+            ########## to delete ###########
+            # if data_index == 9:
+            #     break
         train_loss = np.average(train_losses)
         valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)
