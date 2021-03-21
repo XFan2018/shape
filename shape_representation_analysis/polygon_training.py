@@ -434,6 +434,10 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
     avg_train_losses = []
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = []
+    # to track the validation accuracy per epoch as the model trains
+    valid_acc_list = []
+    # to track the training accuracy per epoch as the model trains
+    training_acc_list = []
     early_stopping = EarlyStopping(patience=patience, verbose=True)
     # write to the log_finetune_silhouette every epoch
     if os.path.exists(log_training_path):
@@ -460,6 +464,8 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
 
         epoch_loss = 0.0
         epoch_corrects_top1 = 0
+        epoch_corrects_validate_top1 = 0
+
         epoch_corrects_top5 = 0
 
         # Iterate over data.
@@ -506,6 +512,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             epoch_corrects_top1 += corrects_top1
             epoch_corrects_top5 += corrects_top5
 
+
         ######################
         # validate the model #
         ######################
@@ -515,6 +522,9 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             labels = labels.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(inputs.float())
+            _, preds = torch.max(output, 1)
+            corrects_top1 = torch.sum(preds == labels.detach())
+            epoch_corrects_validate_top1 += corrects_top1
             # calculate the loss
             loss = criterion(output, labels)
             # record validation loss
@@ -525,9 +535,13 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
+        train_acc = float(epoch_corrects_top1) / len(dataloader.dataset)
+        valid_acc = float(epoch_corrects_validate_top1) / len(dataloader.dataset)
+        training_acc_list.append(train_acc)
+        valid_acc_list.append(valid_acc)
         epoch_result = (f'{epoch:<30} '
                         f'{train_loss :<30.6f} '
-                        f'{float(epoch_corrects_top1) / (len(dataloader.dataset)):<30.6f} '
+                        f'{train_acc:<30.6f} '
                         f'{float(epoch_corrects_top5) / (len(dataloader.dataset)):.6f}\n')
 
         epoch_log.write(epoch_result)
@@ -539,7 +553,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             plot(avg_train_losses, avg_valid_losses, epoch)
         # early_stopping needs the validation loss to check if it has decresed,
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        early_stopping(valid_loss, model, use_accuracy=True)
         if early_stopping.early_stop:
             print("Early stopping")
             stop_point = epoch
@@ -1495,18 +1509,20 @@ def conv_autoencoder_training():
     return avg_train_losses, avg_valid_losses, stop_point
 
 
-def plot(train_loss, valid_loss, stop_point):
+def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
     # visualize the loss as the network trained
     fig = plt.figure(figsize=(10, 8))
     plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
     plt.plot(range(1, len(valid_loss) + 1), valid_loss, label='Validation Loss')
+    plt.plot(range(1, len(train_acc) + 1), train_acc, label='Training Accuracy')
+    plt.plot(range(1, len(valid_acc) + 1), valid_acc, label='Validating Accuracy')
 
     # find position of lowest validation loss
-    minposs = valid_loss.index(min(valid_loss)) + 1
+    minposs = valid_loss.index(max(valid_acc)) + 1
     plt.axvline(minposs, linestyle='--', color='r', label='Early Stopping Checkpoint')
 
     plt.xlabel('epochs')
-    plt.ylabel('loss')
+    plt.ylabel('loss/acc')
     # plt.ylim(0, 0.5)  # consistent scale
     plt.xlim(0, len(train_loss) + 1)  # consistent scale
     plt.grid(True)

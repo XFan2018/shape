@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import os
+
 torch.manual_seed(os.getenv("SEED"))
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -33,9 +34,12 @@ class EarlyStopping:
         self.path = path
         self.trace_func = trace_func
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, use_accuracy=False):
 
-        score = -val_loss
+        if use_accuracy:
+            score = val_loss
+        else:
+            score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
@@ -57,5 +61,3 @@ class EarlyStopping:
                 f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
-
-
