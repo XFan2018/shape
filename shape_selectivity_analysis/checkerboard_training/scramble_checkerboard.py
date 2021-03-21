@@ -38,7 +38,7 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
     """
     #  scramble adversarial image
     lattice_color = 128
-    im1 = np.transpose(im2, (1, 2, 0))
+    im1 = np.transpose(im1, (1, 2, 0))
     im1 = Image.fromarray((im1 * 255).astype(np.uint8))
     if horizontal_only:
         im2 = scramble_image_row(im2, size, size)
@@ -225,6 +225,8 @@ def checkerboard_batch(im1_batch, im2_batch, block_size, horizontal_only=False, 
         cb = checkerboard(im1_batch[i], im2_batch[i], block_size, horizontal_only, use_lattice)
         # cb.show()
         cb = np.array(cb)
+        # im = Image.fromarray(cb)
+        # im.save(f"./sample_images{i}.png")
         cb = transform(cb)
         cb = cb.unsqueeze(0)
         result.append(cb)
@@ -246,6 +248,8 @@ def checkerboard_intact_gray_batch(im1_batch, block_size):
         cb = checkerboard_intact_gray(im1_batch[i], block_size)
         # cb.show()
         cb = np.array(cb)
+        # im = Image.fromarray(cb)
+        # im.save(f"./sample_images{i}.png")
         cb = transform(cb)
         cb = cb.unsqueeze(0)
         result.append(cb)

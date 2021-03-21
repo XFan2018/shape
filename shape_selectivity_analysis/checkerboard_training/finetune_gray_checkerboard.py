@@ -181,8 +181,8 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
                 running_corrects_top5 = 0
 
             ########## to delete ###########
-            if data_index == 9:
-                break
+            # if data_index == 9:
+            #     break
 
         ######################
         # validate the model #
@@ -204,8 +204,8 @@ def train_model_gray(model, trainloaders1, validloaders1, criterion, optimizer, 
                 valid_losses.append(loss.item())
 
             ########## to delete ###########
-            if data_index == 9:
-                break
+            # if data_index == 9:
+            #     break
 
         train_loss = np.average(train_losses)
         valid_loss = np.average(valid_losses)

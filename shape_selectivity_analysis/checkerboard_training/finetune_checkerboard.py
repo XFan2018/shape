@@ -1,7 +1,7 @@
 import os
 import random
 import time
-
+from PIL import Image
 import numpy as np
 import torch
 

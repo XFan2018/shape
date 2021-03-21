@@ -101,9 +101,9 @@ def run_train_finetune_gray(block_size, intact):
     model = torchvision.models.vgg16_bn(True)
     if bool(args.fc_only):
         model.apply(dfs_freeze)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        model.cuda()
+        model.to(device)
     old_state_dict = {}
     if bool(args.fc_only):
         for key in model.state_dict():
