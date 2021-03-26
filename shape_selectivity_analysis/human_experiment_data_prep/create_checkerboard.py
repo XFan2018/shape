@@ -12,6 +12,7 @@ from shape_selectivity_analysis.checkerboard_training.scramble_checkerboard impo
     checkerboard
 print(os.getenv("SEED"))
 random.seed(os.getenv("SEED"))
+img_format = "png"
 block_sizes = [7, 14, 28, 56]
 cate_dict = {
     0: "bear",
@@ -92,6 +93,13 @@ for x in block_sizes:
                 os.makedirs(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate))
             img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.{img_format}"))
 
+            if not os.path.exists(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, f"blocksize{x}", cate)):
+                os.makedirs(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, f"blocksize{x}", cate))
+
+            # img_gray.save(os.path.join(CHECKERBOARD_GRAY_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            img.save(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, f"blocksize{x}", cate, f"{cate}{i}-{cate_jumbled}{j}.{img_format}"))
+            # img_intact.save(os.path.join(INTACT_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
+            # img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.jpeg"))
             i = (i + 1) % 50
         except StopIteration:
             break
