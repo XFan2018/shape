@@ -93,6 +93,7 @@ for x in block_sizes:
                 os.makedirs(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate))
             img_jumbled.save(os.path.join(JUMBLED_DATASET_HUMAN, f"blocksize{x}", cate, f"{cate}{i}.{img_format}"))
 
+
             if not os.path.exists(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, f"blocksize{x}", cate)):
                 os.makedirs(os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, f"blocksize{x}", cate))
 

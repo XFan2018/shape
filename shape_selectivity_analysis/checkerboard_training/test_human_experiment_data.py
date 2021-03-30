@@ -54,7 +54,7 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
     # confidence_score = 0
 
     # test model
-    for index, (inputs, labels, blocksize) in enumerate(test_loader):
+    for index, (inputs, labels) in enumerate(test_loader):
         labels = labels.to(device)
         inputs = inputs.to(device)
 
@@ -82,7 +82,7 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
             print(f"\nmax outputs: {_.detach()} "
                   f"\npreds: ", preds.detach(),
                   f"\nlabels: {labels.detach()}")
-            trail_result = f"{labels.detach().item()}, {blocksize.item()}, {preds.detach().item()}\n"
+            trail_result = f"{labels.detach().item()}, {preds.detach().item()}\n"
             trail_log.write(trail_result)
 
         running_corrects += torch.sum(preds.detach() == labels.detach())
@@ -125,7 +125,7 @@ def test_model_human_experiment_checkerboard(model, test_loader, log_path, devic
     # confidence_score = 0
 
     # test model
-    for index, (inputs, labels, distractor_labels, blocksize) in enumerate(test_loader):
+    for index, (inputs, labels, distractor_labels) in enumerate(test_loader):
         labels = labels.to(device)
         inputs = inputs.to(device)
         distractor_labels = distractor_labels.to(device)
@@ -154,7 +154,7 @@ def test_model_human_experiment_checkerboard(model, test_loader, log_path, devic
             print(f"\nmax outputs: {_.detach()} "
                   f"\npreds: ", preds.detach(),
                   f"\nlabels: {labels.detach()}")
-            trail_result = f"{labels.detach().item()}, {distractor_labels.detach().item()}, {blocksize.item()}, {preds.detach().item()}\n"
+            trail_result = f"{labels.detach().item()}, {distractor_labels.detach().item()}, {preds.detach().item()}\n"
             trail_log.write(trail_result)
 
         running_corrects += torch.sum(preds.detach() == labels.detach())
@@ -179,16 +179,13 @@ def test_model_human_experiment_checkerboard(model, test_loader, log_path, devic
     f_log.close()
 
 
-def run_human_test():
+def run_human_test(model, dataset_str: str):
     ################### prepare parameters ########################
-    model = torchvision.models.vgg16_bn(pretrained=True)
-    # model = torch.load(
-    #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
-    dataset_path = os.path.join(INTACT_DATASET_HUMAN)  # "blocksize"+str(args.block_size)
+    dataset_path = os.path.join(dataset_str, "blocksize"+str(args.block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
-    dataset = HumanCheckerboardDataset(dataset_path, transform, extensions=("jpeg",))
+    dataset = HumanCheckerboardDataset(dataset_path, extensions=("jpeg",), transform=transform )
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     # lr = 1e-3
     # criterion = nn.CrossEntropyLoss()
@@ -202,20 +199,17 @@ def run_human_test():
                                 test_loader=dataloader,
                                 device=device,
                                 model_path=args.model_path,
-                                log_path=args.log_testing_path + "_" + str(args.block_size),
+                                log_path=args.log_testing_path + "_" + dataset_str.split("\\")[-1] + "_" + str(args.block_size),
                                 batch_size=1)
 
 
-def run_human_test_checkerboard():
+def run_human_test_checkerboard(model, dataset_str: str):
     ################### prepare parameters ########################
-    model = torchvision.models.vgg16_bn(pretrained=True)
-    # model = torch.load(
-    #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
-    dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY, "blocksize" + str(args.block_size))
+    dataset_path = os.path.join(dataset_str, "blocksize" + str(args.block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
-    dataset = HumanCheckerboardDataset(dataset_path, transform=transform, extensions=("jpeg",), is_checkerboard=True)
+    dataset = HumanCheckerboardDataset(dataset_path, extensions=("jpeg",), transform=transform, is_checkerboard=True)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -226,12 +220,23 @@ def run_human_test_checkerboard():
                                              test_loader=dataloader,
                                              device=device,
                                              model_path=args.model_path,
-                                             log_path=args.log_testing_path + "_" + str(args.block_size),
-                                             batch_size=16)
+                                             log_path=args.log_testing_path + "_" + dataset_str.split("\\")[-1] + "_" + str(args.block_size),
+                                             batch_size=1)
 
 
 if __name__ == "__main__":
-    run_human_test_checkerboard()
+    model = torchvision.models.vgg16_bn(pretrained=True)
+    # model = torch.load(
+    #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
+    datasets = [INTACT_DATASET_HUMAN, JUMBLED_DATASET_HUMAN, CHECKERBOARD_GRAY_DATASET_HUMAN, CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN]
+    for dataset in datasets:
+        run_human_test(model, dataset)
+
+    datasets = [CHECKERBOARD_DATASET_HUMAN, CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY]
+    for dataset in datasets:
+        run_human_test_checkerboard(model, dataset)
+
+
     # dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN)
     # transform = torchvision.transforms.Compose([transforms.ToTensor(),
     #                                             transforms.Normalize((0.485, 0.456, 0.406),
