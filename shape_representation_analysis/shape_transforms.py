@@ -3,10 +3,13 @@ import random
 import torch
 
 import torch_interpolations
+
+from shape_representation_analysis.sparse_coding import im2poly
 from sparse_coding import *
 import os
-np.random.seed(os.getenv("SEED"))
-random.seed(os.getenv("SEED"))
+import numpy as np
+np.random.seed(int(os.getenv("SEED")))
+random.seed(int(os.getenv("SEED")))
 
 
 class PolygonTransform(object):

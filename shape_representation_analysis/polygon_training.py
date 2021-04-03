@@ -2,6 +2,7 @@ import sys
 import os
 print(sys.path)
 sys.path.append(os.path.split(sys.path[0])[0])
+from settings import logger
 import argparse
 from PIL import Image
 from shape_representation_analysis.sparse_coding import im2poly
@@ -550,7 +551,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         train_losses = []
         valid_losses = []
         if epoch % 10000 == 0:
-            plot(avg_train_losses, avg_valid_losses, epoch)
+            plot(avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, epoch, beta)
         # early_stopping needs the validation loss to check if it has decresed,
         # and if it has, it will make a checkpoint of the current model
         early_stopping(valid_loss, model, use_accuracy=True)
@@ -568,7 +569,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         os.mkdir(model_path)
         torch.save(model, model_path + "/model.pkl" + str(stop_point - patience) + "_beta_" + str(beta))
 
-    return model, avg_train_losses, avg_valid_losses, stop_point
+    return model, avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, stop_point
 
 
 def testing(model, test_loader, device, model_id, log_testing_path):
@@ -620,6 +621,7 @@ def testing(model, test_loader, device, model_id, log_testing_path):
         total_acc_top5)
     f_log.write(result)
     f_log.close()
+    logger.info(f"{log_testing_path} is done /n{result}")
 
 
 def dfs_freeze(model):
@@ -684,7 +686,7 @@ def polygon_training(beta):
     # for key in model.state_dict():
     #     old_state_dict[key] = model.state_dict()[key].clone()
 
-    model, train_loss, valid_loss, stop_point = training(model=model,
+    model, train_loss, valid_loss, train_acc, valid_acc, stop_point = training(model=model,
                                                          beta=beta,
                                                          dataloader=dataloader,
                                                          validloader=validloader,
@@ -707,7 +709,7 @@ def polygon_training(beta):
     #         count += 1
     # print(count)
 
-    return model, train_loss, valid_loss, stop_point
+    return model, train_loss, valid_loss, train_acc, valid_acc, stop_point
 
 
 def polygon_testing(model_trained, stop_point, beta):
@@ -1509,7 +1511,7 @@ def conv_autoencoder_training():
     return avg_train_losses, avg_valid_losses, stop_point
 
 
-def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
+def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     # visualize the loss as the network trained
     fig = plt.figure(figsize=(10, 8))
     plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
@@ -1518,7 +1520,7 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
     plt.plot(range(1, len(valid_acc) + 1), valid_acc, label='Validating Accuracy')
 
     # find position of lowest validation loss
-    minposs = valid_loss.index(max(valid_acc)) + 1
+    minposs = valid_acc.index(max(valid_acc)) + 1
     plt.axvline(minposs, linestyle='--', color='r', label='Early Stopping Checkpoint')
 
     plt.xlabel('epochs')
@@ -1528,7 +1530,7 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig(args.log_training_path + "_" + str(stop_point) + '_loss_plot.png', bbox_inches='tight')
+    fig.savefig(args.log_training_path + "_" + str(stop_point) + "_beta_" + str(beta) + '_loss_plot.png', bbox_inches='tight')
 
 
 def evaluate_ae_result():
@@ -1700,10 +1702,12 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
 
 if __name__ == "__main__":
     ################# train/test classifier #####################
-    for i in [1.0]:
-        model, train_loss, valid_loss, stop_point = polygon_training(i)
-        plot(train_loss, valid_loss, stop_point)
+    logger.info("resnet18 beta=1.5 start")
+    for i in [1.5]:
+        model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
+        plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)
+
 
     ################# evaluate convolutional auto-encoder #####################
     # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")
