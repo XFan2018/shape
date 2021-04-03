@@ -569,7 +569,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         os.mkdir(model_path)
         torch.save(model, model_path + "/model.pkl" + str(stop_point - patience) + "_beta_" + str(beta))
 
-    return model, avg_train_losses, avg_valid_losses, stop_point
+    return model, avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, stop_point
 
 
 def testing(model, test_loader, device, model_id, log_testing_path):
@@ -685,7 +685,7 @@ def polygon_training(beta):
     # for key in model.state_dict():
     #     old_state_dict[key] = model.state_dict()[key].clone()
 
-    model, train_loss, valid_loss, stop_point = training(model=model,
+    model, train_loss, valid_loss, train_acc, valid_acc, stop_point = training(model=model,
                                                          beta=beta,
                                                          dataloader=dataloader,
                                                          validloader=validloader,
@@ -708,7 +708,7 @@ def polygon_training(beta):
     #         count += 1
     # print(count)
 
-    return model, train_loss, valid_loss, stop_point
+    return model, train_loss, valid_loss, train_acc, valid_acc, stop_point
 
 
 def polygon_testing(model_trained, stop_point, beta):
@@ -1703,8 +1703,8 @@ if __name__ == "__main__":
     ################# train/test classifier #####################
     logger.info("resnet18 beta=1.5 start")
     for i in [1.5]:
-        model, train_loss, valid_loss, stop_point = polygon_training(i)
-        plot(train_loss, valid_loss, stop_point, )
+        model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
+        plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)
     logger.info("resnet18 beta=1.5 end")
 
