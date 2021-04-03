@@ -31,6 +31,7 @@ from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
 import torch
+from settings import logger
 
 parser = argparse.ArgumentParser(description="Train a classifier with polygon coordinates")
 parser.add_argument("-dts", "--dataset", help="Path to training dataset.")
@@ -1509,7 +1510,7 @@ def conv_autoencoder_training():
     return avg_train_losses, avg_valid_losses, stop_point
 
 
-def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
+def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     # visualize the loss as the network trained
     fig = plt.figure(figsize=(10, 8))
     plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
@@ -1528,7 +1529,7 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig(args.log_training_path + "_" + str(stop_point) + '_loss_plot.png', bbox_inches='tight')
+    fig.savefig(args.log_training_path + "_" + str(stop_point) + "_beta_" + str(beta) + '_loss_plot.png', bbox_inches='tight')
 
 
 def evaluate_ae_result():
@@ -1700,10 +1701,12 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
 
 if __name__ == "__main__":
     ################# train/test classifier #####################
-    for i in [1.0]:
+    logger.info("resnet18 beta=1.5 start")
+    for i in [1.5]:
         model, train_loss, valid_loss, stop_point = polygon_training(i)
-        plot(train_loss, valid_loss, stop_point)
+        plot(train_loss, valid_loss, stop_point, )
         polygon_testing(model, stop_point=stop_point, beta=i)
+    logger.info("resnet18 beta=1.5 end")
 
     ################# evaluate convolutional auto-encoder #####################
     # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")
