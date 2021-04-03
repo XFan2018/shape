@@ -27,6 +27,8 @@ python polygon_training.py -m log_model_VGG7_8_16_32_128_128_64_aug -pn 32 -ltrp
 
 python polygon_training.py -m log_model_resnet18_ir_rt_cgn2_aug_dropout0.2_bn_lr0.00005 -pn 32 -ltrp log_training_resnet18_ir_rt_cgn2_aug_dropout0.2_bn_lr0.00005 -ltsp log_testing_resnet18_ir_rt_cgn2_aug_dropout0.2_bn_lr0.00005 -ext tif -epn 100000
 
+python polygon_training.py -m log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005 -pn 32 -ltrp log_model_resnet18_ir_lpn_aug_d
+ropout0.2_bn_beta_lr0.00005 -ltsp log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005 -ext tif -epn 300000
 
 Fourier descriptors:
 python polygon_training.py -dts Fourier_descriptor_hemera_dataset.csv -ext png -m log_model_AE_es_64_64_48_32_Fourier_descriptor_128 -epn 10000 -ltrp log_training_AE_es_64_64_48_32_Fourier_descriptor_128 -pn 128 -vs Fourier_descriptor_hemera_dataset_validation.csv -nn "256 256 192 128"

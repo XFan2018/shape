@@ -2,6 +2,7 @@ import sys
 import os
 print(sys.path)
 sys.path.append(os.path.split(sys.path[0])[0])
+from settings import logger
 import argparse
 from PIL import Image
 from shape_representation_analysis.sparse_coding import im2poly
@@ -31,7 +32,6 @@ from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
 import torch
-from settings import logger
 
 parser = argparse.ArgumentParser(description="Train a classifier with polygon coordinates")
 parser.add_argument("-dts", "--dataset", help="Path to training dataset.")
@@ -551,7 +551,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         train_losses = []
         valid_losses = []
         if epoch % 10000 == 0:
-            plot(avg_train_losses, avg_valid_losses, epoch)
+            plot(avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, epoch, beta)
         # early_stopping needs the validation loss to check if it has decresed,
         # and if it has, it will make a checkpoint of the current model
         early_stopping(valid_loss, model, use_accuracy=True)
@@ -1519,7 +1519,7 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     plt.plot(range(1, len(valid_acc) + 1), valid_acc, label='Validating Accuracy')
 
     # find position of lowest validation loss
-    minposs = valid_loss.index(max(valid_acc)) + 1
+    minposs = valid_acc.index(max(valid_acc)) + 1
     plt.axvline(minposs, linestyle='--', color='r', label='Early Stopping Checkpoint')
 
     plt.xlabel('epochs')
