@@ -621,6 +621,7 @@ def testing(model, test_loader, device, model_id, log_testing_path):
         total_acc_top5)
     f_log.write(result)
     f_log.close()
+    logger.info(f"{log_testing_path} is done /n{result}")
 
 
 def dfs_freeze(model):
@@ -1706,7 +1707,7 @@ if __name__ == "__main__":
         model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
         plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)
-    logger.info("resnet18 beta=1.5 end")
+
 
     ################# evaluate convolutional auto-encoder #####################
     # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")
