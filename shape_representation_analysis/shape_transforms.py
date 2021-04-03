@@ -3,8 +3,11 @@ import random
 import torch
 
 import torch_interpolations
+
+from shape_representation_analysis.sparse_coding import im2poly
 from sparse_coding import *
 import os
+import numpy as np
 np.random.seed(os.getenv("SEED"))
 random.seed(os.getenv("SEED"))
 
