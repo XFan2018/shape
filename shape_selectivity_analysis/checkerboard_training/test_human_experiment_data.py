@@ -192,7 +192,7 @@ def run_human_test(model, dataset_str: str):
     # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        model.cuda()
+        model.to(device)
     ################################################################
 
     test_model_human_experiment(model=model,
@@ -213,7 +213,7 @@ def run_human_test_checkerboard(model, dataset_str: str):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        model.cuda()
+        model.to(device)
     ################################################################
 
     test_model_human_experiment_checkerboard(model=model,
@@ -225,16 +225,21 @@ def run_human_test_checkerboard(model, dataset_str: str):
 
 
 if __name__ == "__main__":
-    model = torchvision.models.vgg16_bn(pretrained=True)
-    # model = torch.load(
-    #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
+    model_vgg16 = torchvision.models.vgg16_bn(pretrained=True)
+    model_checkerboard = torch.load(
+        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
+    model_checkerboard_gray = torch.load(
+        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_early_stop_checkerboard_gray_0\model.pkl29", map_location=torch.device('cuda:0'))
+    model_lattice = torch.load(
+        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_lattice_0\model.pkl68"
+    )
     datasets = [INTACT_DATASET_HUMAN, JUMBLED_DATASET_HUMAN, CHECKERBOARD_GRAY_DATASET_HUMAN, CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN]
     for dataset in datasets:
-        run_human_test(model, dataset)
+        run_human_test(model_lattice, dataset)
 
     datasets = [CHECKERBOARD_DATASET_HUMAN, CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY]
     for dataset in datasets:
-        run_human_test_checkerboard(model, dataset)
+        run_human_test_checkerboard(model_lattice, dataset)
 
 
     # dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN)
