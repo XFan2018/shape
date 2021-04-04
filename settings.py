@@ -6,7 +6,7 @@ import logging
 from logging import handlers
 import sys
 load_dotenv(verbose=True)
-env_path = rf"{os.path.split(__file__)[0]}/.env"
+env_path = rf"{os.path.split(__file__)[0]}\.env"
 print(env_path)
 load_dotenv(dotenv_path=env_path)
 shape_path = os.path.dirname(os.path.realpath(__file__))

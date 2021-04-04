@@ -662,8 +662,8 @@ def polygon_training(beta):
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     # model = VGG4PolygonCoordinates_dropout(8, 16, 128, 64)
     # model = VGG5PolygonCoordinates_dropout_selfAttention(8, 16, 32, 128, 64)
-    model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
-    # model = PreActResNet18()
+    # model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
+    model = PreActResNet18()
     # model = VGG4PolygonCoordinatesSelfAttention(8, 16, 128, 64, 8)
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
