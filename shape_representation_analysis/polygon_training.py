@@ -421,9 +421,9 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 def training(model, beta, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
     # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
-    # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
+    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
     # lambda1 = lambda epoch: 1 - 0.000099 * epoch if 1 - 0.000099 * epoch > 0.01 else 0.01
-    lambda1 = lambda epoch: 3.98e-10 * (epoch-50000) ** 2 + 0.005 if epoch < 50000 else 0.005
+    # lambda1 = lambda epoch: 3.98e-10 * (epoch-50000) ** 2 + 0.005 if epoch < 50000 else 0.005
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
     model_path = args.model + architecture
     stop_point = 0
