@@ -554,7 +554,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             plot(avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, epoch, beta)
         # early_stopping needs the validation loss to check if it has decresed,
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model, use_accuracy=True)
+        early_stopping(valid_acc, model, use_accuracy=True)
         if early_stopping.early_stop:
             print("Early stopping")
             stop_point = epoch
