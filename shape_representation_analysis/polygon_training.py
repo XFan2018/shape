@@ -537,7 +537,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         train_acc = float(epoch_corrects_top1) / len(dataloader.dataset)
-        valid_acc = float(epoch_corrects_validate_top1) / len(dataloader.dataset)
+        valid_acc = float(epoch_corrects_validate_top1) / len(validloader.dataset)
         training_acc_list.append(train_acc)
         valid_acc_list.append(valid_acc)
         epoch_result = (f'{epoch:<30} '
