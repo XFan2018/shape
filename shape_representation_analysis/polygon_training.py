@@ -1,10 +1,10 @@
 import sys
 import os
 
-from shape_representation_analysis.util import today, TODAY_FORMAT, LRSchedulerCreator
 
 print(sys.path)
 sys.path.append(os.path.split(sys.path[0])[0])
+from shape_representation_analysis.util import today, TODAY_FORMAT, LRSchedulerCreator
 from settings import logger
 import argparse
 from PIL import Image

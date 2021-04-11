@@ -20,19 +20,19 @@ class LRSchedulerCreator:
         QUADRATIC = 2
 
     def __init__(self, lr_type: Type):
-        self.lr_type = lr_type
+        self._lr_type = lr_type
 
     def __call__(self):
-        if self.lr_type == 1:
+        if self._lr_type == self.Type.EXPONENTIAL:
             return lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
-        elif self.lr_type == 2:
+        elif self._lr_type == self.Type.QUADRATIC:
             return lambda epoch: 3.98e-10 * (epoch - 50000) ** 2 + 0.005 if epoch < 50000 else 0.005
         else:
             raise Exception("scheduler type not exists")
 
     @property
     def lr_type(self):
-        return self.lr_type
+        return self._lr_type
 
     @lr_type.setter
     def lr_type(self, value):
