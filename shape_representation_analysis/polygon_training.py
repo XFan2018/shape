@@ -1,5 +1,8 @@
 import sys
 import os
+
+from shape_representation_analysis.util import today, TODAY_FORMAT, LRSchedulerCreator
+
 print(sys.path)
 sys.path.append(os.path.split(sys.path[0])[0])
 from settings import logger
@@ -421,12 +424,11 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 
 def training(model, beta, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
-    # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
-    lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
-    # lambda1 = lambda epoch: 1 - 0.000099 * epoch if 1 - 0.000099 * epoch > 0.01 else 0.01
-    # lambda2 = lambda epoch: 3.98e-10 * (epoch-50000) ** 2 + 0.005 if epoch < 50000 else 0.005
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
-    model_path = args.model + architecture
+    lr_creator = LRSchedulerCreator(LRSchedulerCreator.Type.QUADRATIC)
+    lambda_fun = lr_creator()
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_fun)
+    model_path = args.model + architecture + today(TODAY_FORMAT)
+
     stop_point = 0
     # to track the training loss as the model trains
     train_losses = []
@@ -574,6 +576,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
 
 
 def testing(model, test_loader, device, model_id, log_testing_path):
+    log_testing_path = log_testing_path + today(TODAY_FORMAT)
     if os.path.exists(log_testing_path):
         f_log = open(log_testing_path + "/test_after_train.txt", "a+")
     else:
@@ -1531,7 +1534,10 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig(args.log_training_path + "_" + str(stop_point) + "_beta_" + str(beta) + '_loss_plot.png', bbox_inches='tight')
+    fig.savefig(args.log_training_path + "_" +
+                str(stop_point) + "_beta_" +
+                str(beta) +
+                today(TODAY_FORMAT) + '_loss_plot.png', bbox_inches='tight')
 
 
 def evaluate_ae_result():
