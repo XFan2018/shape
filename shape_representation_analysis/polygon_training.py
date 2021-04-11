@@ -424,6 +424,7 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 
 def training(model, beta, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
+    log_training_path = log_training_path + today(TODAY_FORMAT)
     lr_creator = LRSchedulerCreator(LRSchedulerCreator.Type.QUADRATIC)
     lambda_fun = lr_creator()
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_fun)
@@ -1536,7 +1537,7 @@ def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     plt.tight_layout()
     fig.savefig(args.log_training_path + "_" +
                 str(stop_point) + "_beta_" +
-                str(beta) +
+                str(beta) + "_" +
                 today(TODAY_FORMAT) + '_loss_plot.png', bbox_inches='tight')
 
 

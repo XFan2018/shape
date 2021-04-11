@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-TODAY_FORMAT = "%d/%m/%Y_%H:%M:%S"
+TODAY_FORMAT = "date_%d-%m-%Y"
 
 
 def today(dt_format: str) -> str:
