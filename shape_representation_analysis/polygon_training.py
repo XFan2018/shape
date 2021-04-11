@@ -35,6 +35,7 @@ from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
 import torch
+import datetime
 
 parser = argparse.ArgumentParser(description="Train a classifier with polygon coordinates")
 parser.add_argument("-dts", "--dataset", help="Path to training dataset.")
@@ -427,6 +428,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
     lambda_fun = lr_creator()
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_fun)
     model_path = args.model + architecture + today(TODAY_FORMAT)
+
     stop_point = 0
     # to track the training loss as the model trains
     train_losses = []
@@ -664,8 +666,8 @@ def polygon_training(beta):
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     # model = VGG4PolygonCoordinates_dropout(8, 16, 128, 64)
     # model = VGG5PolygonCoordinates_dropout_selfAttention(8, 16, 32, 128, 64)
-    # model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
-    model = PreActResNet18()
+    model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
+    # model = PreActResNet18()
     # model = VGG4PolygonCoordinatesSelfAttention(8, 16, 128, 64, 8)
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
@@ -1707,8 +1709,8 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
 
 if __name__ == "__main__":
     ################# train/test classifier #####################
-    logger.info("resnet18 beta=1.5 start")
-    for i in [1.5]:
+    logger.info("multi-head2 start")
+    for i in [0.5, 1.0, 1.5, 2.0, 2.5]:
         model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
         plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)
