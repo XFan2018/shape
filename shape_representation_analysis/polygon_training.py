@@ -666,7 +666,6 @@ def polygon_training(beta):
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     # model = VGG4PolygonCoordinates_dropout(8, 16, 128, 64)
-    # model = VGG5PolygonCoordinates_dropout_selfAttention(8, 16, 32, 128, 64)
     model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
     # model = PreActResNet18()
     # model = VGG4PolygonCoordinatesSelfAttention(8, 16, 128, 64, 8)
