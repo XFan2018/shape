@@ -30,3 +30,5 @@ python polygon_training.py -m log_model_resnet18_ir_rt_cgn2_aug_dropout0.2_bn_lr
 python polygon_training.py -m log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005 -pn 32 -ltrp log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005 -ltsp log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005 -ext tif -epn 300000
 
 python polygon_training.py -m log_model_VGG5self_attention_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -pn 32 -ltrp log_training_VGG5self_attention_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -ltsp log_testing_VGG5self_attention_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -ext tif -epn 300000
+
+python polygon_training.py -m log_model_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -pn 32 -ltrp log_training_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -ltsp log_testing_resnet18_ir_lpn_aug_dropout0.2_bn_beta_lr0.00005_scheduler2 -ext tif -epn 300000
