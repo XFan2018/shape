@@ -230,16 +230,16 @@ if __name__ == "__main__":
         r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
     model_checkerboard_gray = torch.load(
         r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_early_stop_checkerboard_gray_0\model.pkl29", map_location=torch.device('cuda:0'))
-    model_lattice = torch.load(
-        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_lattice_0\model.pkl68"
-    )
+    # model_lattice = torch.load(
+    #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_lattice_0\model.pkl68"
+    # )
     datasets = [INTACT_DATASET_HUMAN, JUMBLED_DATASET_HUMAN, CHECKERBOARD_GRAY_DATASET_HUMAN, CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN]
     for dataset in datasets:
-        run_human_test(model_lattice, dataset)
+        run_human_test(model_vgg16, dataset)
 
-    datasets = [CHECKERBOARD_DATASET_HUMAN, CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK, CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY]
+    datasets = [CHECKERBOARD_DATASET_HUMAN]
     for dataset in datasets:
-        run_human_test_checkerboard(model_lattice, dataset)
+        run_human_test_checkerboard(model_vgg16, dataset)
 
 
     # dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN)
