@@ -8,7 +8,7 @@ import numpy as np
 from shape_representation_analysis.shape_transforms import RandomRotatePoints, RandomFlipPoints, IndexRotate, \
     WhiteNoise, LowPassNoise
 import os
-np.random.seed(os.getenv("SEED"))
+np.random.seed(int(os.getenv("SEED")))
 
 class PolygonAEAnimalDataset():
     """

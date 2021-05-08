@@ -1,7 +1,11 @@
 import sys
 import os
+
+
 print(sys.path)
 sys.path.append(os.path.split(sys.path[0])[0])
+from shape_representation_analysis.util import today, TODAY_FORMAT, LRSchedulerCreator
+from settings import logger
 import argparse
 from PIL import Image
 from shape_representation_analysis.sparse_coding import im2poly
@@ -31,6 +35,7 @@ from shape_representation_analysis.pytorchtools import EarlyStopping
 import numpy as np
 import torch.nn as nn
 import torch
+import datetime
 
 parser = argparse.ArgumentParser(description="Train a classifier with polygon coordinates")
 parser.add_argument("-dts", "--dataset", help="Path to training dataset.")
@@ -419,12 +424,12 @@ def testing_no_es(model, test_loader, device, model_id, log_testing_path):
 
 def training(model, beta, dataloader, validloader, criterion, optimizer, num_epochs, device, log_training_path,
              architecture="", patience=50):
-    # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.01 else 0.01
-    # lambda1 = lambda epoch: 0.99 ** epoch if 0.99 ** epoch > 0.005 else 0.005
-    # lambda1 = lambda epoch: 1 - 0.000099 * epoch if 1 - 0.000099 * epoch > 0.01 else 0.01
-    lambda1 = lambda epoch: 3.98e-10 * (epoch-50000) ** 2 + 0.005 if epoch < 50000 else 0.005
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
-    model_path = args.model + architecture
+    log_training_path = log_training_path + today(TODAY_FORMAT)
+    lr_creator = LRSchedulerCreator(LRSchedulerCreator.Type.QUADRATIC)
+    lambda_fun = lr_creator()
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_fun)
+    model_path = args.model + architecture + today(TODAY_FORMAT)
+
     stop_point = 0
     # to track the training loss as the model trains
     train_losses = []
@@ -434,6 +439,10 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
     avg_train_losses = []
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = []
+    # to track the validation accuracy per epoch as the model trains
+    valid_acc_list = []
+    # to track the training accuracy per epoch as the model trains
+    training_acc_list = []
     early_stopping = EarlyStopping(patience=patience, verbose=True)
     # write to the log_finetune_silhouette every epoch
     if os.path.exists(log_training_path):
@@ -460,6 +469,8 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
 
         epoch_loss = 0.0
         epoch_corrects_top1 = 0
+        epoch_corrects_validate_top1 = 0
+
         epoch_corrects_top5 = 0
 
         # Iterate over data.
@@ -506,6 +517,7 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             epoch_corrects_top1 += corrects_top1
             epoch_corrects_top5 += corrects_top5
 
+
         ######################
         # validate the model #
         ######################
@@ -515,6 +527,9 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
             labels = labels.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(inputs.float())
+            _, preds = torch.max(output, 1)
+            corrects_top1 = torch.sum(preds == labels.detach())
+            epoch_corrects_validate_top1 += corrects_top1
             # calculate the loss
             loss = criterion(output, labels)
             # record validation loss
@@ -525,9 +540,13 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
+        train_acc = float(epoch_corrects_top1) / len(dataloader.dataset)
+        valid_acc = float(epoch_corrects_validate_top1) / len(validloader.dataset)
+        training_acc_list.append(train_acc)
+        valid_acc_list.append(valid_acc)
         epoch_result = (f'{epoch:<30} '
                         f'{train_loss :<30.6f} '
-                        f'{float(epoch_corrects_top1) / (len(dataloader.dataset)):<30.6f} '
+                        f'{train_acc:<30.6f} '
                         f'{float(epoch_corrects_top5) / (len(dataloader.dataset)):.6f}\n')
 
         epoch_log.write(epoch_result)
@@ -536,10 +555,10 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         train_losses = []
         valid_losses = []
         if epoch % 10000 == 0:
-            plot(avg_train_losses, avg_valid_losses, epoch)
+            plot(avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, epoch, beta)
         # early_stopping needs the validation loss to check if it has decresed,
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        early_stopping(valid_acc, model, use_accuracy=True)
         if early_stopping.early_stop:
             print("Early stopping")
             stop_point = epoch
@@ -554,10 +573,11 @@ def training(model, beta, dataloader, validloader, criterion, optimizer, num_epo
         os.mkdir(model_path)
         torch.save(model, model_path + "/model.pkl" + str(stop_point - patience) + "_beta_" + str(beta))
 
-    return model, avg_train_losses, avg_valid_losses, stop_point
+    return model, avg_train_losses, avg_valid_losses, training_acc_list, valid_acc_list, stop_point
 
 
 def testing(model, test_loader, device, model_id, log_testing_path):
+    log_testing_path = log_testing_path + today(TODAY_FORMAT)
     if os.path.exists(log_testing_path):
         f_log = open(log_testing_path + "/test_after_train.txt", "a+")
     else:
@@ -606,6 +626,7 @@ def testing(model, test_loader, device, model_id, log_testing_path):
         total_acc_top5)
     f_log.write(result)
     f_log.close()
+    logger.info(f"{log_testing_path} is done /n{result}")
 
 
 def dfs_freeze(model):
@@ -645,9 +666,8 @@ def polygon_training(beta):
                                               shuffle=False)
     # model = Net([int(input_nodes), int(hidden1_nodes), int(hidden2_nodes), int(output_nodes)])
     # model = VGG4PolygonCoordinates_dropout(8, 16, 128, 64)
-    # model = VGG5PolygonCoordinates_dropout_selfAttention(8, 16, 32, 128, 64)
-    model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
-    # model = PreActResNet18()
+    # model = VGG5PolygonCoordinatesSelfAttention(8, 16, 32, 128, 64, 2, 4)
+    model = PreActResNet18()
     # model = VGG4PolygonCoordinatesSelfAttention(8, 16, 128, 64, 8)
     # model = torch.load(
     #     r"D:\projects\shape\shape_representation_analysis\log_model_ConvAE1_1_es_8_bs=64\pretrained_CNN2.pkl")
@@ -670,7 +690,7 @@ def polygon_training(beta):
     # for key in model.state_dict():
     #     old_state_dict[key] = model.state_dict()[key].clone()
 
-    model, train_loss, valid_loss, stop_point = training(model=model,
+    model, train_loss, valid_loss, train_acc, valid_acc, stop_point = training(model=model,
                                                          beta=beta,
                                                          dataloader=dataloader,
                                                          validloader=validloader,
@@ -693,7 +713,7 @@ def polygon_training(beta):
     #         count += 1
     # print(count)
 
-    return model, train_loss, valid_loss, stop_point
+    return model, train_loss, valid_loss, train_acc, valid_acc, stop_point
 
 
 def polygon_testing(model_trained, stop_point, beta):
@@ -1495,24 +1515,29 @@ def conv_autoencoder_training():
     return avg_train_losses, avg_valid_losses, stop_point
 
 
-def plot(train_loss, valid_loss, stop_point):
+def plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, beta):
     # visualize the loss as the network trained
     fig = plt.figure(figsize=(10, 8))
     plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
     plt.plot(range(1, len(valid_loss) + 1), valid_loss, label='Validation Loss')
+    plt.plot(range(1, len(train_acc) + 1), train_acc, label='Training Accuracy')
+    plt.plot(range(1, len(valid_acc) + 1), valid_acc, label='Validating Accuracy')
 
     # find position of lowest validation loss
-    minposs = valid_loss.index(min(valid_loss)) + 1
+    minposs = valid_acc.index(max(valid_acc)) + 1
     plt.axvline(minposs, linestyle='--', color='r', label='Early Stopping Checkpoint')
 
     plt.xlabel('epochs')
-    plt.ylabel('loss')
+    plt.ylabel('loss/acc')
     # plt.ylim(0, 0.5)  # consistent scale
     plt.xlim(0, len(train_loss) + 1)  # consistent scale
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig(args.log_training_path + "_" + str(stop_point) + '_loss_plot.png', bbox_inches='tight')
+    fig.savefig(args.log_training_path + "_" +
+                str(stop_point) + "_beta_" +
+                str(beta) + "_" +
+                today(TODAY_FORMAT) + '_loss_plot.png', bbox_inches='tight')
 
 
 def evaluate_ae_result():
@@ -1684,10 +1709,12 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
 
 if __name__ == "__main__":
     ################# train/test classifier #####################
-    for i in [1.0]:
-        model, train_loss, valid_loss, stop_point = polygon_training(i)
-        plot(train_loss, valid_loss, stop_point)
+    logger.info("multi-head2 start")
+    for i in [2.5]:
+        model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
+        plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)
+
 
     ################# evaluate convolutional auto-encoder #####################
     # evaluate_conv_ae_result(True, r"D:\projects\shape\shape_representation_analysis\log_model_AE_es_256_256_192_128_Fourier_descriptor_128_bs=64")
