@@ -37,9 +37,11 @@ def checkerboard(im1: np.ndarray, im2: np.ndarray, size: int, horizontal_only=Fa
     :return: checkerboard image that combines ground truth image and scrambled adversarial attack image (PIL)
     """
     #  scramble adversarial image
-    lattice_color = 128
-    im1 = np.transpose(im1, (1, 2, 0))
-    im1 = Image.fromarray((im1 * 255).astype(np.uint8))
+
+    lattice_color = 0
+    transform = transforms.ToPILImage()
+    im1 = transform(im1)
+    im2 = np.transpose(im2, (2, 0, 1))
     if horizontal_only:
         im2 = scramble_image_row(im2, size, size)
     else:

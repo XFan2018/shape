@@ -100,7 +100,7 @@ class HumanCheckerboardDataset:
         targets (list): The class_index value for each image in the dataset
     """
 
-    def __init__(self, root, loader=default_loader, extensions=None, transform=None,
+    def __init__(self, root, extensions=None, transform=None,
                  target_transform=None, is_valid_file=None, is_checkerboard=False):
         super(HumanCheckerboardDataset, self).__init__()
         self.root = root
@@ -114,7 +114,6 @@ class HumanCheckerboardDataset:
                 msg += "Supported extensions are: {}".format(",".join(extensions))
             raise RuntimeError(msg)
 
-        self.loader = loader
         self.extensions = extensions
 
         self.classes = classes
@@ -150,23 +149,21 @@ class HumanCheckerboardDataset:
             tuple: (sample, target) where target is class_index of the target class.
         """
         path, target = self.samples[index]
+        print(path)
         if self.is_checkerboard:
             image_name = os.path.split(path)[1].split("-")[1].split(".")[0]
-        blocksize = os.path.split(path)[1].split("_")[0]
-        blocksize = int(''.join([i for i in blocksize if i.isdigit()]))
-        print(blocksize)
         if self.is_checkerboard:
             distractor_name = ''.join([i for i in image_name if not i.isdigit()])
             distractor_class = cate_dict[distractor_name]
             print(image_name)
-        sample = self.loader(path)
+        sample = default_loader(path)
         if self.transform is not None:
             sample = self.transform(sample)
         if self.target_transform is not None:
             target = self.target_transform(target)
         if self.is_checkerboard:
-            return sample, target, distractor_class, blocksize
-        return sample, target, blocksize  # sample, target, blocksize   # sample, target, distractor_class, blocksize
+            return sample, target, distractor_class
+        return sample, target  # sample, target, blocksize   # sample, target, distractor_class, blocksize
 
     def __len__(self):
         return len(self.samples)

@@ -11,15 +11,6 @@ print(env_path)
 load_dotenv(dotenv_path=env_path)
 shape_path = os.path.dirname(os.path.realpath(__file__))
 prefix = "/Users/leo/Dropbox/shape_dataset/"
-IMAGENET_DIR = fr"{prefix}imagenet_val"
-IMAGENET_16CAT_DIR = fr"{prefix}imagenet_16categories"
-CHECKERBOARD_PREP = rf"{prefix}checkerboard_prep_new"
-CHECKERBOARD_DATASET_HUMAN = rf"{prefix}checkerboard_dataset_human_png"
-CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK = fr"{prefix}checkerboard_lattice_dataset_human_black_png"
-CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY = fr"{prefix}checkerboard_lattice_dataset_human_gray_png"
-CHECKERBOARD_GRAY_DATASET_HUMAN = fr"{prefix}checkerboard_gray_dataset_human_png"
-INTACT_DATASET_HUMAN = fr"{prefix}intact_dataset_human_png"
-JUMBLED_DATASET_HUMAN = fr"{prefix}jumbled_dataset_human_png"
 
 logger = logging.getLogger("mylogger")
 logger.setLevel(logging.DEBUG)
@@ -37,3 +28,15 @@ em_handler = handlers.SMTPHandler(
 em_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 em_handler.setLevel(logging.DEBUG)
 logger.addHandler(em_handler)
+
+IMAGENET_DIR = r"D:\projects\shape_dataset\imagenet_val"
+IMAGENET_16CAT_DIR = r"D:\projects\shape_dataset\imagenet_16categories"
+CHECKERBOARD_PREP = r"D:\projects\shape_dataset\checkerboard_prep_new"
+
+CHECKERBOARD_DATASET_HUMAN = r"D:\projects\shape_dataset\checkerboard_dataset_human_png"
+CHECKERBOARD_DATASET_HUMAN_LATTICE_BLACK = r"D:\projects\shape_dataset\checkerboard_lattice_dataset_human_black"
+CHECKERBOARD_DATASET_HUMAN_LATTICE_GRAY = r"D:\projects\shape_dataset\checkerboard_lattice_dataset_human_gray"
+CHECKERBOARD_GRAY_DATASET_HUMAN = r"D:\projects\shape_dataset\checkerboard_gray_dataset_human_png"
+CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN = r"D:\projects\shape_dataset\checkerboard_jumbled_gray_dataset_human_png"
+INTACT_DATASET_HUMAN = r"D:\projects\shape_dataset\intact_dataset_human_png"
+JUMBLED_DATASET_HUMAN = r"D:\projects\shape_dataset\jumbled_dataset_human_png"
