@@ -699,7 +699,7 @@ def polygon_training(beta):
                                                          num_epochs=int(args.epoch_number),
                                                          device=device,
                                                          log_training_path=args.log_training_path + "_beta_" + str(beta),
-                                                         patience=10000)
+                                                         patience=20000)
 
     # new_state_dict = {}
     # for key in model.state_dict():
@@ -1710,7 +1710,7 @@ def save_pretrained_conv_ae(autoencoder_dir, model_save_path, no_pretrain=False)
 if __name__ == "__main__":
     ################# train/test classifier #####################
     logger.info("multi-head2 start")
-    for i in [2.5]:
+    for i in [0.5, 1, 1.5, 2.0, 2.5]:
         model, train_loss, valid_loss, train_acc, valid_acc, stop_point = polygon_training(i)
         plot(train_loss, valid_loss, train_acc, valid_acc, stop_point, i)
         polygon_testing(model, stop_point=stop_point, beta=i)

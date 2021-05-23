@@ -6,6 +6,7 @@ from os import path
 import torch
 import torchvision
 import os
+
 torch.manual_seed(os.getenv("SEED"))
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -33,6 +34,7 @@ parser.add_argument("-bs", "--block_size", help="block size of checkerboard", ty
 args = parser.parse_args()
 
 
+
 def test_model_human_experiment(model, test_loader, log_path, device, model_path, batch_size):
     since = time.time()
     if path.exists(log_path):
@@ -50,6 +52,28 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
     model.eval()
 
     running_corrects = 0
+    # TODO get per ground truth category performance
+    running_corrects_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
+    acc_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
+
     # running_corrects_top5 = 0
     # confidence_score = 0
 
@@ -78,6 +102,8 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
                 for key in index_mapping_dict.keys():
                     if preds[i].detach() in index_mapping_dict[key]:
                         preds[i] = key
+                        # only escape the inner loop
+                        break
             preds = preds.to(device)
             print(f"\nmax outputs: {_.detach()} "
                   f"\npreds: ", preds.detach(),
@@ -85,19 +111,27 @@ def test_model_human_experiment(model, test_loader, log_path, device, model_path
             trail_result = f"{labels.detach().item()}, {preds.detach().item()}\n"
             trail_log.write(trail_result)
 
-        running_corrects += torch.sum(preds.detach() == labels.detach())
+        correct_counter = torch.sum(preds.detach() == labels.detach())
+        running_corrects += correct_counter
+        # TODO get per ground truth category performance
+        running_corrects_per_category[labels.detach().item()] += correct_counter
+
 
         print(f"running corrects: {running_corrects}")
 
         # if index == 10:
         #     break
 
-    total_acc = running_corrects.double() / len(test_loader.dataset)
+    total_acc = float(running_corrects) / len(test_loader.dataset)
+    # TODO get per ground truth category performance
+    for i in range(len(index_mapping_dict)):
+        acc_per_category[i] += float(running_corrects_per_category[i]) / len(test_loader.dataset) * 8
+
     time_elapsed = time.time() - since
 
     tag = model_path
 
-    result = f"{tag:<30}" + 'time_elapsed: {:4f} Acc: {:.4f}\n'.format(time_elapsed, total_acc)
+    result = f"{tag:<30}" + 'time_elapsed: {:4f} Acc: {:.4f} Acc_per_category {}\n'.format(time_elapsed, total_acc, acc_per_category)
     f_log.write(result)
     f_log.close()
 
@@ -120,9 +154,50 @@ def test_model_human_experiment_checkerboard(model, test_loader, log_path, devic
     model.eval()
 
     running_corrects = 0
-    distracting_num = 0
+    distractor_corrects = 0
     # running_corrects_top5 = 0
     # confidence_score = 0
+    # TODO get per ground truth category performance
+    running_corrects_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
+    distractor_corrects_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
+    acc_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
+    distractor_acc_per_category = {
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0
+    }
 
     # test model
     for index, (inputs, labels, distractor_labels) in enumerate(test_loader):
@@ -157,35 +232,46 @@ def test_model_human_experiment_checkerboard(model, test_loader, log_path, devic
             trail_result = f"{labels.detach().item()}, {distractor_labels.detach().item()}, {preds.detach().item()}\n"
             trail_log.write(trail_result)
 
-        running_corrects += torch.sum(preds.detach() == labels.detach())
-        distracting_num += torch.sum(preds.detach() == distractor_labels.detach())
+        correct_counter = torch.sum(preds.detach() == labels.detach())
+        distracting_counter = torch.sum(preds.detach() == distractor_labels.detach())
+        running_corrects += correct_counter
+        distractor_corrects += distracting_counter
+
+        # TODO get per ground truth category performance
+        running_corrects_per_category[labels.detach().item()] += correct_counter
+        distractor_corrects_per_category[distractor_labels.detach().item()] += distracting_counter
 
         print(f"running corrects: {running_corrects}")
-        print(f"distracting number: {distracting_num}")
+        print(f"distracting number: {distracting_counter}")
 
         # if index == 10:
         #     break
 
-    total_acc = running_corrects.double() / len(test_loader.dataset)
-    distracting_rate = distracting_num.double() / len(test_loader.dataset)
-    time_elapsed = time.time() - since
 
+    total_acc = running_corrects.double() / len(test_loader.dataset)
+    distracting_rate = distractor_corrects.double() / len(test_loader.dataset)
+    # TODO get per ground truth category performance
+    for i in range(len(index_mapping_dict)):
+        acc_per_category[i] += float(running_corrects_per_category[i]) / len(test_loader.dataset) * 8
+        distractor_acc_per_category[i] += float(distractor_corrects_per_category[i]) / len(test_loader.dataset) * 8
+
+    time_elapsed = time.time() - since
     tag = model_path
 
-    result = f"{tag:<30}" + 'time_elapsed: {:4f} Acc: {:.4f} Distracting rate {:.4f}\n'.format(time_elapsed, total_acc,
-                                                                                               distracting_rate)
+    result = f"{tag:<30}" + 'time_elapsed: {:4f} Acc: {:.4f} Distracting rate {:.4f} acc per category: {} distractor acc per category: {}\n'.format(time_elapsed, total_acc,
+                                                                                               distracting_rate, acc_per_category, distractor_acc_per_category)
     f_log.write(result)
     trail_log.close()
     f_log.close()
 
 
-def run_human_test(model, dataset_str: str):
+def run_human_test(model, dataset_str: str, block_size: int):
     ################### prepare parameters ########################
-    dataset_path = os.path.join(dataset_str, "blocksize"+str(args.block_size))
+    dataset_path = os.path.join(dataset_str, "blocksize" + str(block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
-    dataset = HumanCheckerboardDataset(dataset_path, extensions=("jpeg",), transform=transform )
+    dataset = HumanCheckerboardDataset(dataset_path, extensions=("png",), transform=transform)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     # lr = 1e-3
     # criterion = nn.CrossEntropyLoss()
@@ -199,17 +285,18 @@ def run_human_test(model, dataset_str: str):
                                 test_loader=dataloader,
                                 device=device,
                                 model_path=args.model_path,
-                                log_path=args.log_testing_path + "_" + dataset_str.split("\\")[-1] + "_" + str(args.block_size),
+                                log_path=args.log_testing_path + "_" + dataset_str.split("\\")[-1] + "_" + str(
+                                    block_size),
                                 batch_size=1)
 
 
-def run_human_test_checkerboard(model, dataset_str: str):
+def run_human_test_checkerboard(model, dataset_str: str, block_size: int):
     ################### prepare parameters ########################
-    dataset_path = os.path.join(dataset_str, "blocksize" + str(args.block_size))
+    dataset_path = os.path.join(dataset_str, "blocksize" + str(block_size))
     transform = torchvision.transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize((0.485, 0.456, 0.406),
                                                                      (0.229, 0.224, 0.225))])
-    dataset = HumanCheckerboardDataset(dataset_path, extensions=("jpeg",), transform=transform, is_checkerboard=True)
+    dataset = HumanCheckerboardDataset(dataset_path, extensions=("png",), transform=transform, is_checkerboard=True)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -220,7 +307,8 @@ def run_human_test_checkerboard(model, dataset_str: str):
                                              test_loader=dataloader,
                                              device=device,
                                              model_path=args.model_path,
-                                             log_path=args.log_testing_path + "_" + dataset_str.split("\\")[-1] + "_" + str(args.block_size),
+                                             log_path=args.log_testing_path + "_" + dataset_str.split("\\")[
+                                                 -1] + "_" + str(block_size),
                                              batch_size=1)
 
 
@@ -229,18 +317,21 @@ if __name__ == "__main__":
     model_checkerboard = torch.load(
         r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_0\model.pkl46")
     model_checkerboard_gray = torch.load(
-        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_early_stop_checkerboard_gray_0\model.pkl29", map_location=torch.device('cuda:0'))
+        r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_early_stop_checkerboard_gray_0\model.pkl29",
+        map_location=torch.device('cuda:0'))
     # model_lattice = torch.load(
     #     r"D:\projects\shape\shape_selectivity_analysis\checkerboard_training\log_model_es_checkerboard_lattice_0\model.pkl68"
     # )
-    datasets = [INTACT_DATASET_HUMAN, JUMBLED_DATASET_HUMAN, CHECKERBOARD_GRAY_DATASET_HUMAN, CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN]
-    for dataset in datasets:
-        run_human_test(model_vgg16, dataset)
+    datasets = [INTACT_DATASET_HUMAN, JUMBLED_DATASET_HUMAN, CHECKERBOARD_GRAY_DATASET_HUMAN,
+                CHECKERBOARD_GRAY_JUMBLED_DATASET_HUMAN]
+    for block_size in [56, 28, 14, 7]:
+        for dataset in datasets:
+            run_human_test(model_vgg16, dataset, block_size)
 
     datasets = [CHECKERBOARD_DATASET_HUMAN]
-    for dataset in datasets:
-        run_human_test_checkerboard(model_vgg16, dataset)
-
+    for block_size in [56, 28, 14, 7]:
+        for dataset in datasets:
+            run_human_test_checkerboard(model_vgg16, dataset, block_size)
 
     # dataset_path = os.path.join(CHECKERBOARD_DATASET_HUMAN)
     # transform = torchvision.transforms.Compose([transforms.ToTensor(),
