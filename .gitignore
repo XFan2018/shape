@@ -154,7 +154,5 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-shape/shape_representation_analysis\log*
-*.png
-*.png
-shape_representation_analysis/log_training_AE_es_64_64_48_32_Fourier_descriptor2_1913_loss_plot.png
+# pickle
+*.pkl
