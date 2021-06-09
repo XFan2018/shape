@@ -65,7 +65,7 @@ class MaskImageGenerator:
         self.model = model
         self.data_transforms = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         self.org_data_transforms = transforms.Compose([
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -216,7 +216,7 @@ class MaskImageGenerator:
                 val = outputs[torch.arange(1), label]
                 val = torch.squeeze(val)
                 result.append(val.item())
-                logger.info(f"iter: {i}, mean_val: {val}, label: {label}")
+                logger.info(f"iter: {i}, val: {val}, label: {label}")
         return result
 
     def calculate_org_logit(self) -> List:
@@ -249,21 +249,37 @@ class MaskImageGenerator:
             return pickle.load(f)
 
 
+MODEL = pytorchnet.bagnet33(pretrained=True)
+DATASET = r"D:\projects\shape_dataset\imagenet_val_testing_dataset_Copy"
+DESTINATION = r"C:\Users\x44fa\Dropbox\York_summer_project\occluded_images"
+
+
+def get_corrcoef(patch_size: int):
+    import numpy as np
+    generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
+    rhs = generator.calculate_rhs(patch_size)
+    lhs = generator.calculate_lhs(patch_size)
+    org = generator.calculate_org_logit()
+    generator.pickle_data(rhs, 'rhs_new.pkl')
+    generator.pickle_data(lhs, 'lhs_new.pkl')
+    generator.pickle_data(org, 'org_new.pkl')
+    rhs = np.array(rhs)
+    lhs = np.array(lhs)
+    org = np.array(org)
+    RHS = rhs - org
+    LHS = lhs - org
+    return np.corrcoef(RHS, LHS)
+
+
 if __name__ == "__main__":
     import numpy as np
-    model = pytorchnet.bagnet33(pretrained=True)
-    generator = MaskImageGenerator(r"D:\projects\shape_dataset\imagenet_val_testing_dataset_Copy",
-                                   r"C:\Users\x44fa\Dropbox\York_summer_project\occluded_images",
-                                   model)
-    org = np.array(generator.load_data("org.pkl"))
-    all_pat = np.array(generator.load_data("rhs.pkl"))
-    single_pat = np.array(generator.load_data("lhs.pkl"))
-
-    LHS = single_pat - org
-    RHS = all_pat - org
-
-    np.corrcoef(LHS, RHS)
-
-
-
-
+    generator =MaskImageGenerator(DATASET, DESTINATION, MODEL)
+    lhs = generator.load_data('lhs_new.pkl')
+    rhs = generator.load_data('rhs_new.pkl')
+    org = generator.load_data('org_new.pkl')
+    rhs = np.array(rhs)
+    lhs = np.array(lhs)
+    org = np.array(org)
+    RHS = rhs - org
+    LHS = lhs - org
+    pass
