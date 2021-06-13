@@ -67,11 +67,6 @@ class MaskImageGenerator:
             transforms.ToTensor(),
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-        self.org_data_transforms = transforms.Compose([
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor()
-        ])
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def mask_patch(self, img: Image.Image, patch_size: int):
@@ -135,7 +130,7 @@ class MaskImageGenerator:
     # generate two occluded datasets for left side and right side of the eq, repectively
     # Isolation dataset contains many images with an individual patch for one data
     # Combination dataset contains one image with all patches for one data
-    def make_dataset(self, patch_size: int):
+    def make_dataset(self, patch_size: int, original=False, combination=False, isolation=False):
         self.copy_dataset_folders(patch_size)
         for idx, img_class_path in enumerate(Path.iterdir(Path(self.dataset))):
             image_class = str(img_class_path).split(delimiter)[-1]
@@ -148,17 +143,26 @@ class MaskImageGenerator:
                 logger.info(img_path)
                 img = Image.open(img_path)
                 *isolation_images, combination_image, original_image = self.mask_patch(img, patch_size)
-                # save combination image
-                combination_image.save(Path(self.dst).
-                                       joinpath(f"{self.combination}_{patch_size}").
-                                       joinpath(image_class).
-                                       joinpath(image_name + f".{extension}"), format=extension)
-                # save isolation images
-                for i, isolation_image in enumerate(isolation_images):
-                    isolation_image.save(Path(self.dst).
-                                         joinpath(f"{self.isolation}_{patch_size}").
-                                         joinpath(image_class).
-                                         joinpath(f"{image_name}_{i}.{extension}"), format=extension)
+
+                if original:
+                    # save original image
+                    original_image.save(Path(self.dst).
+                                        joinpath(f"original").
+                                        joinpath(image_class).
+                                        joinpath(image_name + f".{extension}"), format=extension)
+                if combination:
+                    # save combination image
+                    combination_image.save(Path(self.dst).
+                                           joinpath(f"{self.combination}_{patch_size}").
+                                           joinpath(image_class).
+                                           joinpath(image_name + f".{extension}"), format=extension)
+                if isolation:
+                    # save isolation images
+                    for i, isolation_image in enumerate(isolation_images):
+                        isolation_image.save(Path(self.dst).
+                                             joinpath(f"{self.isolation}_{patch_size}").
+                                             joinpath(image_class).
+                                             joinpath(f"{image_name}_{i}.{extension}"), format=extension)
 
     # copy class folders of the dataset to another path
     def copy_dataset_folders(self, patch_size: int):
@@ -170,8 +174,19 @@ class MaskImageGenerator:
             try:
                 Path(self.dst).joinpath(f"{self.isolation}_{patch_size}").joinpath(class_dir).mkdir(mode=644,
                                                                                                     parents=True)
+            except FileExistsError:
+                logger.info("file already exists")
+
+            try:
                 Path(self.dst).joinpath(f"{self.combination}_{patch_size}").joinpath(class_dir).mkdir(mode=644,
                                                                                                       parents=True)
+
+            except FileExistsError:
+                logger.info("file already exists")
+
+            try:
+                Path(self.dst).joinpath(f"original").joinpath(class_dir).mkdir(mode=644,
+                                                                               parents=True)
             except FileExistsError:
                 logger.info("file already exists")
 
@@ -192,7 +207,7 @@ class MaskImageGenerator:
             label = label.to(self.device)
             with torch.set_grad_enabled(False):
                 outputs = self.model(image)
-                val = outputs[torch.arange(4), label]
+                val = outputs[torch.arange(batch_size), label]
                 mean_val = torch.mean(val)
                 result.append(mean_val.item())
                 logger.info(f"iter: {i}, mean_val: {mean_val}, label: {label}")
@@ -213,7 +228,7 @@ class MaskImageGenerator:
             label = label.to(self.device)
             with torch.set_grad_enabled(False):
                 outputs = self.model(image)
-                val = outputs[torch.arange(1), label]
+                val = outputs[torch.tensor(0), label]
                 val = torch.squeeze(val)
                 result.append(val.item())
                 logger.info(f"iter: {i}, val: {val}, label: {label}")
@@ -221,7 +236,8 @@ class MaskImageGenerator:
 
     def calculate_org_logit(self) -> List:
         result = []
-        data = torchvision.datasets.ImageFolder(self.dataset, self.org_data_transforms)
+        dataset = Path(self.dst).joinpath("original")
+        data = torchvision.datasets.ImageFolder(dataset, self.data_transforms)
         dataloader = torch.utils.data.DataLoader(data,
                                                  shuffle=False,  # batch size default is 1
                                                  num_workers=2)
@@ -232,10 +248,10 @@ class MaskImageGenerator:
             label = label.to(self.device)
             with torch.set_grad_enabled(False):
                 outputs = self.model(image)
-                val = outputs[torch.arange(1), label]
+                val = outputs[torch.tensor(0), label]
                 val = torch.squeeze(val)
                 result.append(val.item())
-                logger.info(f"iter: {i}, mean_val: {val}, label: {label}")
+                logger.info(f"iter: {i}, val: {val}, label: {label}")
         return result
 
     def pickle_data(self, data: List, file_name: str):
@@ -254,32 +270,31 @@ DATASET = r"D:\projects\shape_dataset\imagenet_val_testing_dataset_Copy"
 DESTINATION = r"C:\Users\x44fa\Dropbox\York_summer_project\occluded_images"
 
 
-def get_corrcoef(patch_size: int):
-    import numpy as np
+def get_corrcoef(patch_size: int, generate_org=False):
     generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
+    generator.make_dataset(patch_size, combination=True, isolation=True)
     rhs = generator.calculate_rhs(patch_size)
+    generator.pickle_data(rhs, f'rhs_{patch_size}.pkl')
     lhs = generator.calculate_lhs(patch_size)
-    org = generator.calculate_org_logit()
-    generator.pickle_data(rhs, 'rhs_new.pkl')
-    generator.pickle_data(lhs, 'lhs_new.pkl')
-    generator.pickle_data(org, 'org_new.pkl')
-    rhs = np.array(rhs)
-    lhs = np.array(lhs)
-    org = np.array(org)
-    RHS = rhs - org
-    LHS = lhs - org
-    return np.corrcoef(RHS, LHS)
+    generator.pickle_data(lhs, f'lhs_{patch_size}.pkl')
+    if generate_org:
+        org = generator.calculate_org_logit()
+        generator.pickle_data(org, f'org.pkl')
+
 
 
 if __name__ == "__main__":
-    import numpy as np
-    generator =MaskImageGenerator(DATASET, DESTINATION, MODEL)
-    lhs = generator.load_data('lhs_new.pkl')
-    rhs = generator.load_data('rhs_new.pkl')
-    org = generator.load_data('org_new.pkl')
-    rhs = np.array(rhs)
-    lhs = np.array(lhs)
-    org = np.array(org)
-    RHS = rhs - org
-    LHS = lhs - org
-    pass
+# import numpy as np
+#
+# generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
+# rhs = generator.load_data('rhs_new2.pkl')
+# lhs = generator.load_data('lhs_new2.pkl')
+# org = generator.load_data('org_new2.pkl')
+# rhs = np.array(rhs)
+# lhs = np.array(lhs)
+# org = np.array(org)
+# RHS = rhs - org
+# LHS = lhs - org
+# pass
+    for patch_size in [20, 30, 40, 50, 70]:
+        get_corrcoef(patch_size)
