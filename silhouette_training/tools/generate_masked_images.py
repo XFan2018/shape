@@ -7,8 +7,9 @@ import torchvision
 from PIL import Image
 from bagnets import pytorchnet
 from torchvision import transforms
+import time
 
-delimiter = "\\"
+delimiter = "/"
 file_path = r"D:\projects\shape_dataset\imagenet_val\n01440764\ILSVRC2012_val_00007197.JPEG"
 save_path = r"C:\Users\x44fa\Dropbox\York_summer_project\occluded_images"
 logging.basicConfig(format="%(asctime)s — logger %(name)s — %(levelname)s — %(message)s",
@@ -172,20 +173,20 @@ class MaskImageGenerator:
                 continue
             logger.info(class_dir)
             try:
-                Path(self.dst).joinpath(f"{self.isolation}_{patch_size}").joinpath(class_dir).mkdir(mode=644,
+                Path(self.dst).joinpath(f"{self.isolation}_{patch_size}").joinpath(class_dir).mkdir(mode=755,
                                                                                                     parents=True)
             except FileExistsError:
                 logger.info("file already exists")
 
             try:
-                Path(self.dst).joinpath(f"{self.combination}_{patch_size}").joinpath(class_dir).mkdir(mode=644,
+                Path(self.dst).joinpath(f"{self.combination}_{patch_size}").joinpath(class_dir).mkdir(mode=755,
                                                                                                       parents=True)
 
             except FileExistsError:
                 logger.info("file already exists")
 
             try:
-                Path(self.dst).joinpath(f"original").joinpath(class_dir).mkdir(mode=644,
+                Path(self.dst).joinpath(f"original").joinpath(class_dir).mkdir(mode=755,
                                                                                parents=True)
             except FileExistsError:
                 logger.info("file already exists")
@@ -196,6 +197,7 @@ class MaskImageGenerator:
         dataset = Path(self.dst).joinpath(f"{self.isolation}_{patch_size}")
         data = torchvision.datasets.ImageFolder(dataset, self.data_transforms)
         batch_size = self.switcher[patch_size]["img_number"] - 1
+        logger.info(f"batch size: {batch_size}")
         dataloader = torch.utils.data.DataLoader(data,
                                                  batch_size=batch_size,
                                                  shuffle=False,
@@ -266,17 +268,18 @@ class MaskImageGenerator:
 
 
 MODEL = pytorchnet.bagnet33(pretrained=True)
-DATASET = r"D:\projects\shape_dataset\imagenet_val_testing_dataset_Copy"
-DESTINATION = r"C:\Users\x44fa\Dropbox\York_summer_project\occluded_images"
+DATASET = r"/home/xingye/imagenet_val_testing_dataset_Copy"
+DESTINATION = r"/home/xingye/occluded_images"
 
 
-def get_corrcoef(patch_size: int, generate_org=False):
+def get_corrcoef(patch_size: int, generate_dataset=False, generate_org=False):
     generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
-    generator.make_dataset(patch_size, combination=True, isolation=True)
-    rhs = generator.calculate_rhs(patch_size)
-    generator.pickle_data(rhs, f'rhs_{patch_size}.pkl')
+    if generate_dataset:
+        generator.make_dataset(patch_size, combination=False, isolation=False, original=False)
     lhs = generator.calculate_lhs(patch_size)
     generator.pickle_data(lhs, f'lhs_{patch_size}.pkl')
+    rhs = generator.calculate_rhs(patch_size)
+    generator.pickle_data(rhs, f'rhs_{patch_size}.pkl')
     if generate_org:
         org = generator.calculate_org_logit()
         generator.pickle_data(org, f'org.pkl')
@@ -296,5 +299,8 @@ if __name__ == "__main__":
 # RHS = rhs - org
 # LHS = lhs - org
 # pass
-    for patch_size in [20, 30, 40, 50, 70]:
-        get_corrcoef(patch_size)
+    start = time.time()
+    for patch_size in [30]:
+        get_corrcoef(patch_size, generate_dataset=False)
+    end = time.time()
+    logger.info(end - start)
