@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from pathlib import Path
 from typing import Any, List
 
@@ -196,10 +197,11 @@ class MaskImageGenerator:
         result = []
         dataset = Path(self.dst).joinpath(f"{self.isolation}_{patch_size}")
         data = torchvision.datasets.ImageFolder(dataset, self.data_transforms)
-        batch_size = self.switcher[patch_size]["img_number"] - 1
-        logger.info(f"batch size: {batch_size}")
+        patch_num = self.switcher[patch_size]["img_number"] - 1
+        logger.info(f"batch size: {patch_num}")
+        logit_list = torch.empty(patch_num)
         dataloader = torch.utils.data.DataLoader(data,
-                                                 batch_size=batch_size,
+                                                 # batch_size=batch_size,
                                                  shuffle=False,
                                                  num_workers=2)
         self.model = self.model.to(self.device)
@@ -209,10 +211,13 @@ class MaskImageGenerator:
             label = label.to(self.device)
             with torch.set_grad_enabled(False):
                 outputs = self.model(image)
-                val = outputs[torch.arange(batch_size), label]
-                mean_val = torch.mean(val)
-                result.append(mean_val.item())
-                logger.info(f"iter: {i}, mean_val: {mean_val}, label: {label}")
+                val = outputs[torch.tensor(0), label]
+                logit_list[i % patch_num] = val
+                if (i + 1) % patch_num == 0:
+                    mean_val = torch.mean(logit_list)
+                    result.append(mean_val.item())
+                    logit_list = torch.empty(patch_num)
+                    logger.info(f"iter: {i + 1}, mean_val: {mean_val}, label: {label}")
         return result
 
     # calculate RHS: logits of the images that are manipulated by all patches at once
@@ -267,40 +272,55 @@ class MaskImageGenerator:
             return pickle.load(f)
 
 
-MODEL = pytorchnet.bagnet33(pretrained=True)
+bag33_model = pytorchnet.bagnet33(pretrained=True)
+bag17_model = pytorchnet.bagnet17(pretrained=True)
+bag9_model = pytorchnet.bagnet9(pretrained=True)
+vgg16_model = torchvision.models.vgg16_bn(True)
+chb_model = torch.load(r"/home/xingye/shape/shape_selectivity_analysis/checkerboard_training/log_model_es_checkerboard_0/model.pkl46")
+
+MODEL = [bag17_model, bag9_model, vgg16_model, chb_model]
+MODEL_NAME = ["bag17", "bag9", "vgg16", "chb"]
+
 DATASET = r"/home/xingye/imagenet_val_testing_dataset_Copy"
 DESTINATION = r"/home/xingye/occluded_images"
 
 
-def get_corrcoef(patch_size: int, generate_dataset=False, generate_org=False):
-    generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
+def get_corrcoef(patch_size: int, model: Any, model_name: str, generate_dataset: bool = False, generate_org: bool = False):
+    """
+    :param patch_size: size of the occlusion patch
+    :param generate_dataset: set True if need to genereate the manipulated dataset (both combination and isolation)
+    :param generate_org: set True to generate the pearson correlation for original images (without manipulation)
+    :return: None
+    """
+    generator = MaskImageGenerator(DATASET, DESTINATION, model)
     if generate_dataset:
         generator.make_dataset(patch_size, combination=False, isolation=False, original=False)
     lhs = generator.calculate_lhs(patch_size)
-    generator.pickle_data(lhs, f'lhs_{patch_size}.pkl')
+    generator.pickle_data(lhs, f'lhs_{model_name}_{patch_size}_new.pkl')
     rhs = generator.calculate_rhs(patch_size)
-    generator.pickle_data(rhs, f'rhs_{patch_size}.pkl')
+    generator.pickle_data(rhs, f'rhs_{model_name}_{patch_size}_new.pkl')
     if generate_org:
         org = generator.calculate_org_logit()
-        generator.pickle_data(org, f'org.pkl')
-
+        generator.pickle_data(org, f'org_{model_name}_new.pkl')
 
 
 if __name__ == "__main__":
-# import numpy as np
-#
-# generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
-# rhs = generator.load_data('rhs_new2.pkl')
-# lhs = generator.load_data('lhs_new2.pkl')
-# org = generator.load_data('org_new2.pkl')
-# rhs = np.array(rhs)
-# lhs = np.array(lhs)
-# org = np.array(org)
-# RHS = rhs - org
-# LHS = lhs - org
-# pass
-    start = time.time()
-    for patch_size in [30]:
-        get_corrcoef(patch_size, generate_dataset=False)
-    end = time.time()
-    logger.info(end - start)
+    # import numpy as np
+    #
+    # generator = MaskImageGenerator(DATASET, DESTINATION, MODEL)
+    # rhs = generator.load_data('rhs_new2.pkl')
+    # lhs = generator.load_data('lhs_new2.pkl')
+    # org = generator.load_data('org_new2.pkl')
+    # rhs = np.array(rhs)
+    # lhs = np.array(lhs)
+    # org = np.array(org)
+    # RHS = rhs - org
+    # LHS = lhs - org
+    # pass
+    for model, model_name in zip(MODEL, MODEL_NAME):
+        start = time.time()
+        get_corrcoef(20, model, model_name, generate_dataset=False, generate_org=True)
+        for patch_size in [30, 40, 50, 60, 70]:
+            get_corrcoef(patch_size, model, model_name, generate_dataset=False, generate_org=False)
+        end = time.time()
+        logger.info(end - start)
